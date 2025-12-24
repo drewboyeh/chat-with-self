@@ -1,18 +1,33 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { BookOpen, LogOut, Sparkles } from "lucide-react";
+import { BookOpen, LogOut, Sparkles, Menu, X } from "lucide-react";
 
 interface ChatHeaderProps {
   onOpenFutureVisions?: () => void;
+  onToggleSidebar?: () => void;
+  sidebarOpen?: boolean;
 }
 
-export function ChatHeader({ onOpenFutureVisions }: ChatHeaderProps) {
+export function ChatHeader({ onOpenFutureVisions, onToggleSidebar, sidebarOpen }: ChatHeaderProps) {
   const { signOut } = useAuth();
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
       <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
+          {/* Sidebar Toggle Button */}
+          {onToggleSidebar && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleSidebar}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+          )}
+          
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <BookOpen className="w-5 h-5 text-primary" />
           </div>
