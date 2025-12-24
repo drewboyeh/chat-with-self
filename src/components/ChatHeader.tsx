@@ -1,9 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { BookOpen, LogOut } from "lucide-react";
+import { BookOpen, LogOut, Sparkles } from "lucide-react";
 
-export function ChatHeader() {
-  const { signOut, user } = useAuth();
+interface ChatHeaderProps {
+  onOpenFutureVisions?: () => void;
+}
+
+export function ChatHeader({ onOpenFutureVisions }: ChatHeaderProps) {
+  const { signOut } = useAuth();
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
@@ -21,15 +25,34 @@ export function ChatHeader() {
             </p>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={signOut}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign out
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenFutureVisions}
+            className="text-primary border-primary/30 hover:bg-primary/10 hidden sm:flex"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            Future Visions
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onOpenFutureVisions}
+            className="text-primary sm:hidden"
+          >
+            <Sparkles className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={signOut}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Sign out</span>
+          </Button>
+        </div>
       </div>
     </header>
   );

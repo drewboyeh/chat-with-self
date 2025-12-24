@@ -7,6 +7,7 @@ import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { TypingIndicator } from "./TypingIndicator";
 import { EmptyState } from "./EmptyState";
+import { FutureVisions } from "./FutureVisions";
 
 interface Message {
   id: string;
@@ -20,6 +21,7 @@ export function ChatJournal() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [showFutureVisions, setShowFutureVisions] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -201,10 +203,10 @@ export function ChatJournal() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <ChatHeader />
+      <ChatHeader onOpenFutureVisions={() => setShowFutureVisions(true)} />
 
       {messages.length === 0 ? (
-        <EmptyState />
+        <EmptyState onOpenFutureVisions={() => setShowFutureVisions(true)} />
       ) : (
         <div className="flex-1 overflow-y-auto py-6 scrollbar-thin">
           <div className="max-w-3xl mx-auto space-y-1">
@@ -226,6 +228,10 @@ export function ChatJournal() {
       )}
 
       <ChatInput onSend={handleSend} disabled={isLoading} />
+
+      {showFutureVisions && (
+        <FutureVisions onClose={() => setShowFutureVisions(false)} />
+      )}
     </div>
   );
 }

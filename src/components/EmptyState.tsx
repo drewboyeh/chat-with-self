@@ -1,6 +1,11 @@
 import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export function EmptyState() {
+interface EmptyStateProps {
+  onOpenFutureVisions?: () => void;
+}
+
+export function EmptyState({ onOpenFutureVisions }: EmptyStateProps) {
   return (
     <div className="flex-1 flex items-center justify-center px-4">
       <div className="text-center max-w-md animate-fade-in">
@@ -27,6 +32,22 @@ export function EmptyState() {
             )
           )}
         </div>
+        
+        {onOpenFutureVisions && (
+          <div className="mt-8 pt-6 border-t border-border">
+            <p className="text-sm text-muted-foreground mb-3">
+              Or explore your possible futures
+            </p>
+            <Button
+              variant="outline"
+              onClick={onOpenFutureVisions}
+              className="text-primary border-primary/30 hover:bg-primary/10"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Future Visions
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
