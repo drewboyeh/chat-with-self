@@ -111,9 +111,13 @@ export function EntrySidebar({ messages, onSelectEntry, isOpen, onClose }: Entry
       <div
         className={cn(
           "h-full w-80 bg-sidebar border-r border-sidebar-border flex flex-col",
-          "lg:relative lg:translate-x-0",
+          // Desktop: always visible, part of flex layout (relative positioning)
+          "lg:relative lg:flex lg:translate-x-0",
+          // Mobile: fixed overlay that slides in/out
           "fixed top-0 left-0 z-50 transform transition-transform duration-300 ease-in-out",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          isOpen ? "translate-x-0" : "-translate-x-full",
+          // Hide on mobile when closed, show on desktop always
+          isOpen ? "flex" : "hidden lg:flex"
         )}
       >
         {/* Header */}
