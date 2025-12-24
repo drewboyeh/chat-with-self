@@ -8,6 +8,7 @@ import { ChatInput } from "./ChatInput";
 import { TypingIndicator } from "./TypingIndicator";
 import { EmptyState } from "./EmptyState";
 import { FutureVisions } from "./FutureVisions";
+import { EntrySidebar } from "./EntrySidebar";
 
 interface Message {
   id: string;
@@ -22,7 +23,9 @@ export function ChatJournal() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [showFutureVisions, setShowFutureVisions] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -72,6 +75,18 @@ export function ChatJournal() {
       return null;
     }
     return data as Message;
+  };
+
+  const scrollToEntry = (messageId: string) => {
+    const element = messageRefs.current[messageId];
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Highlight the message briefly
+      element.classList.add("ring-2", "ring-primary", "ring-offset-2");
+      setTimeout(() => {
+        element.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+      }, 2000);
+    }
   };
 
   const handleSend = async (message: string) => {
@@ -202,36 +217,56 @@ export function ChatJournal() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <ChatHeader onOpenFutureVisions={() => setShowFutureVisions(true)} />
+    <div className="min-h-screen flex bg-background">
+      {/* Entry Sidebar */}
+      <EntrySidebar
+        messages={messages}
+        onSelectEntry={scrollToEntry}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      {messages.length === 0 ? (
-        <EmptyState onOpenFutureVisions={() => setShowFutureVisions(true)} />
-      ) : (
-        <div className="flex-1 overflow-y-auto py-6 scrollbar-thin">
-          <div className="max-w-3xl mx-auto space-y-1">
-            {messages.map((msg) => (
-              <ChatMessage
-                key={msg.id}
-                content={msg.content}
-                role={msg.role}
-                createdAt={new Date(msg.created_at)}
-                isNew={msg.isNew}
-              />
-            ))}
-            {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-              <TypingIndicator />
-            )}
-            <div ref={messagesEndRef} />
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col">
+        <ChatHeader 
+          onOpenFutureVisions={() => setShowFutureVisions(true)}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          sidebarOpen={sidebarOpen}
+        />
+
+        {messages.length === 0 ? (
+          <EmptyState onOpenFutureVisions={() => setShowFutureVisions(true)} />
+        ) : (
+          <div className="flex-1 overflow-y-auto py-6 scrollbar-thin">
+            <div className="max-w-3xl mx-auto space-y-1">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  ref={(el) => (messageRefs.current[msg.id] = el)}
+                  className="transition-all duration-300"
+                >
+                  <ChatMessage
+                    content={msg.content}
+                    role={msg.role}
+                    createdAt={new Date(msg.created_at)}
+                    isNew={msg.isNew}
+                  />
+                </div>
+              ))}
+              {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+                <TypingIndicator />
+              )}
+              <div ref={messagesEndRef} />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <ChatInput onSend={handleSend} disabled={isLoading} />
+        <ChatInput onSend={handleSend} disabled={isLoading} />
 
-      {showFutureVisions && (
-        <FutureVisions onClose={() => setShowFutureVisions(false)} />
-      )}
+        {showFutureVisions && (
+          <FutureVisions onClose={() => setShowFutureVisions(false)} />
+        )}
+      </div>
     </div>
   );
 }
