@@ -21,9 +21,21 @@ interface ReminderFormProps {
 }
 
 export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: ReminderFormProps) {
+  // Set default time to 1 hour from now
+  const getDefaultDateTime = () => {
+    const now = new Date();
+    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+    return {
+      date: oneHourLater.toISOString().split("T")[0],
+      time: oneHourLater.toTimeString().slice(0, 5),
+    };
+  };
+
+  const defaultDateTime = getDefaultDateTime();
+  
   const [task, setTask] = useState(initialTask);
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [date, setDate] = useState(defaultDateTime.date);
+  const [time, setTime] = useState(defaultDateTime.time);
   const [recurrence, setRecurrence] = useState<"none" | "daily" | "weekly" | "weekdays">("none");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
@@ -31,7 +43,12 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !task.trim() || !date || !time) {
+    
+    // Use actual values from state or defaults
+    const finalDate = date || defaultDateTime.date;
+    const finalTime = time || defaultDateTime.time;
+    
+    if (!user || !task.trim() || !finalDate || !finalTime) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields.",
@@ -43,8 +60,8 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
     setIsSubmitting(true);
 
     try {
-      // Combine date and time into a single timestamp
-      const reminderDateTime = new Date(`${date}T${time}`);
+      // Combine date and time into a single timestamp (use final values)
+      const reminderDateTime = new Date(`${finalDate}T${finalTime}`);
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
       const { error } = await supabase.from("reminders").insert({
@@ -64,8 +81,8 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
       });
 
       setTask("");
-      setDate("");
-      setTime("");
+      setDate(defaultDateTime.date);
+      setTime(defaultDateTime.time);
       setRecurrence("none");
       onSuccess?.();
     } catch (error) {
@@ -79,18 +96,6 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
       setIsSubmitting(false);
     }
   };
-
-  // Set default time to 1 hour from now
-  const getDefaultDateTime = () => {
-    const now = new Date();
-    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-    return {
-      date: oneHourLater.toISOString().split("T")[0],
-      time: oneHourLater.toTimeString().slice(0, 5),
-    };
-  };
-
-  const defaultDateTime = getDefaultDateTime();
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -115,7 +120,7 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
           <Input
             id="date"
             type="date"
-            value={date || defaultDateTime.date}
+            value={date}
             onChange={(e) => setDate(e.target.value)}
             min={new Date().toISOString().split("T")[0]}
             required
@@ -130,7 +135,7 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
           <Input
             id="time"
             type="time"
-            value={time || defaultDateTime.time}
+            value={time}
             onChange={(e) => setTime(e.target.value)}
             required
           />
