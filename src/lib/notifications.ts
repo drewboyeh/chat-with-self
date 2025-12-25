@@ -1,9 +1,21 @@
 // Browser push notification service
 export class NotificationService {
   private static permission: NotificationPermission = "default";
+  private static notificationClickHandlers: Map<string, () => void> = new Map();
+
+  static getPermission(): NotificationPermission {
+    if (!("Notification" in window)) {
+      return "denied";
+    }
+    return Notification.permission;
+  }
+
+  static isSupported(): boolean {
+    return "Notification" in window;
+  }
 
   static async requestPermission(): Promise<NotificationPermission> {
-    if (!("Notification" in window)) {
+    if (!this.isSupported()) {
       console.warn("This browser does not support notifications");
       return "denied";
     }
@@ -13,47 +25,76 @@ export class NotificationService {
       return "granted";
     }
 
-    if (Notification.permission !== "denied") {
+    if (Notification.permission === "denied") {
+      this.permission = "denied";
+      return "denied";
+    }
+
+    // Permission is "default" - request it
+    try {
       const permission = await Notification.requestPermission();
       this.permission = permission;
       return permission;
+    } catch (error) {
+      console.error("Error requesting notification permission:", error);
+      return "denied";
     }
-
-    return "denied";
   }
 
   static async showNotification(
     title: string,
-    options?: NotificationOptions
-  ): Promise<void> {
-    if (!("Notification" in window)) {
+    options?: NotificationOptions & { onClick?: () => void }
+  ): Promise<Notification | null> {
+    if (!this.isSupported()) {
       console.warn("This browser does not support notifications");
-      return;
+      return null;
     }
 
     if (Notification.permission !== "granted") {
       const permission = await this.requestPermission();
       if (permission !== "granted") {
         console.warn("Notification permission denied");
-        return;
+        return null;
       }
     }
 
     try {
+      const { onClick, ...notificationOptions } = options || {};
+      
       const notification = new Notification(title, {
         icon: "/favicon.ico",
         badge: "/favicon.ico",
-        ...options,
+        dir: "auto",
+        lang: "en",
+        ...notificationOptions,
       });
 
-      // Auto-close after 10 seconds
-      setTimeout(() => {
-        notification.close();
-      }, 10000);
+      // Handle click event
+      if (onClick) {
+        const tag = notificationOptions.tag || `notification-${Date.now()}`;
+        this.notificationClickHandlers.set(tag, onClick);
+        
+        notification.onclick = () => {
+          onClick();
+          notification.close();
+          this.notificationClickHandlers.delete(tag);
+        };
+      }
 
-      return Promise.resolve();
+      // Auto-close after 10 seconds (unless requireInteraction is true)
+      if (!notificationOptions.requireInteraction) {
+        setTimeout(() => {
+          notification.close();
+          if (notificationOptions.tag) {
+            this.notificationClickHandlers.delete(notificationOptions.tag);
+          }
+        }, 10000);
+      }
+
+      return notification;
     } catch (error) {
       console.error("Error showing notification:", error);
+      return null;
     }
   }
 

@@ -14,13 +14,17 @@ export function useReminders() {
   useEffect(() => {
     if (!user) return;
 
-    // Request notification permission on mount
-    NotificationService.requestPermission();
+    // Don't auto-request permission - let user do it via UI
+    // Just check if it's already granted
+    if (NotificationService.getPermission() === "granted") {
+      console.log("Notification permission already granted");
+    }
 
-    // Check for due reminders every minute
+    // Check for due reminders every 30 seconds for better precision
     const checkReminders = async () => {
       const now = new Date();
-      const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+      // Check reminders that are due now or within the next 2 minutes
+      const twoMinutesFromNow = new Date(now.getTime() + 2 * 60 * 1000);
 
       const { data, error } = await supabase
         .from("reminders")
@@ -28,8 +32,8 @@ export function useReminders() {
         .eq("user_id", user.id)
         .eq("is_active", true)
         .is("completed_at", null)
-        .lte("reminder_time", fiveMinutesFromNow.toISOString())
-        .gte("reminder_time", now.toISOString());
+        .lte("reminder_time", twoMinutesFromNow.toISOString())
+        .gte("reminder_time", new Date(now.getTime() - 5 * 60 * 1000).toISOString()); // Include reminders from 5 min ago (in case we missed them)
 
       if (error) {
         console.error("Error checking reminders:", error);
@@ -39,21 +43,35 @@ export function useReminders() {
       if (data && data.length > 0) {
         // Check if we've already notified about this reminder recently
         for (const reminder of data) {
+          const reminderTime = new Date(reminder.reminder_time);
+          const timeDiff = reminderTime.getTime() - now.getTime();
+          
+          // Only notify if reminder is due (within 2 minutes) and we haven't notified recently
           const lastNotified = reminder.last_notified_at
             ? new Date(reminder.last_notified_at)
             : null;
           const shouldNotify =
-            !lastNotified ||
-            now.getTime() - lastNotified.getTime() > 60 * 1000; // Don't notify more than once per minute
+            timeDiff <= 2 * 60 * 1000 && // Reminder is due or very soon
+            (!lastNotified || now.getTime() - lastNotified.getTime() > 5 * 60 * 1000); // Don't notify more than once per 5 minutes
 
           if (shouldNotify) {
-            // Show browser notification
+            // Show browser notification with click handler
             await NotificationService.showNotification(
               "Future Self Check-In",
               {
                 body: `Did you ${reminder.task.toLowerCase()}? How will your future self feel?`,
                 tag: `reminder-${reminder.id}`,
                 requireInteraction: true,
+                onClick: () => {
+                  // Focus the window and show check-in dialog
+                  window.focus();
+                  if (!checkInReminder) {
+                    setCheckInReminder({
+                      id: reminder.id,
+                      task: reminder.task,
+                    });
+                  }
+                },
               }
             );
 
@@ -114,8 +132,8 @@ export function useReminders() {
     // Check immediately
     checkReminders();
 
-    // Then check every minute
-    const interval = setInterval(checkReminders, 60 * 1000);
+    // Then check every 30 seconds for better precision
+    const interval = setInterval(checkReminders, 30 * 1000);
 
     return () => clearInterval(interval);
   }, [user, checkInReminder]);

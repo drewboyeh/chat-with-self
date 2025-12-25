@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isPast, isToday } from "date-fns";
 import { Bell, BellOff, Trash2, Check } from "lucide-react";
+import { NotificationPermissionPrompt, NotificationStatus } from "./NotificationPermissionPrompt";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -113,6 +114,13 @@ export function ReminderList() {
 
   return (
     <div className="space-y-4">
+      <NotificationPermissionPrompt />
+      
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-foreground">Active Reminders</h3>
+        <NotificationStatus />
+      </div>
+
       {activeReminders.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-foreground">Active Reminders</h3>
