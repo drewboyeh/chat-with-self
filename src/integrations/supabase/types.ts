@@ -38,6 +38,42 @@ export type Database = {
         }
         Relationships: []
       }
+      reminders: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          last_notified_at: string | null
+          recurrence: string | null
+          reminder_time: string
+          task: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_notified_at?: string | null
+          recurrence?: string | null
+          reminder_time: string
+          task: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_notified_at?: string | null
+          recurrence?: string | null
+          reminder_time?: string
+          task?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
