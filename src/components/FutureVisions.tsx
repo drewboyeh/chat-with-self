@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { Sparkles, Sun, Moon, X, Loader2 } from "lucide-react";
+import { Sparkles, Sun, Moon, X, Loader2, Bell, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { ReminderForm } from "./ReminderForm";
+import { ReminderList } from "./ReminderList";
 
 interface FutureVisionsProps {
   onClose: () => void;
@@ -18,6 +21,8 @@ export function FutureVisions({ onClose }: FutureVisionsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [visions, setVisions] = useState<Visions | null>(null);
   const [prompt, setPrompt] = useState("");
+  const [activeTab, setActiveTab] = useState<"visions" | "reminders">("visions");
+  const [showReminderForm, setShowReminderForm] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -138,7 +143,20 @@ export function FutureVisions({ onClose }: FutureVisionsProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          {!visions ? (
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="visions">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Future Visions
+              </TabsTrigger>
+              <TabsTrigger value="reminders">
+                <Bell className="w-4 h-4 mr-2" />
+                Reminders
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="visions" className="space-y-6">
+              {!visions ? (
             <div className="max-w-2xl mx-auto space-y-6">
               <div className="text-center space-y-2">
                 <p className="text-muted-foreground">
@@ -172,7 +190,7 @@ export function FutureVisions({ onClose }: FutureVisionsProps) {
                 )}
               </Button>
             </div>
-          ) : (
+              ) : (
             <div className="max-w-5xl mx-auto space-y-6">
               {/* Two paths side by side */}
               <div className="grid md:grid-cols-2 gap-4 md:gap-6">
@@ -234,7 +252,40 @@ export function FutureVisions({ onClose }: FutureVisionsProps) {
                 </Button>
               </div>
             </div>
-          )}
+              )}
+            </TabsContent>
+
+            <TabsContent value="reminders" className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Your Reminders</h3>
+                <Button
+                  onClick={() => setShowReminderForm(!showReminderForm)}
+                  size="sm"
+                  variant={showReminderForm ? "outline" : "default"}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {showReminderForm ? "Cancel" : "New Reminder"}
+                </Button>
+              </div>
+
+              {showReminderForm ? (
+                <div className="bg-card border border-border rounded-lg p-6">
+                  <ReminderForm
+                    onSuccess={() => {
+                      setShowReminderForm(false);
+                      toast({
+                        title: "Reminder created!",
+                        description: "You'll be notified when it's time.",
+                      });
+                    }}
+                    onCancel={() => setShowReminderForm(false)}
+                  />
+                </div>
+              ) : (
+                <ReminderList />
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

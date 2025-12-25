@@ -1,9 +1,12 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useReminders } from "@/hooks/useReminders";
 import { AuthForm } from "@/components/AuthForm";
 import { ChatJournal } from "@/components/ChatJournal";
+import { CheckInDialog } from "@/components/CheckInDialog";
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const { checkInReminder, setCheckInReminder } = useReminders();
 
   if (loading) {
     return (
@@ -20,7 +23,20 @@ const Index = () => {
     return <AuthForm />;
   }
 
-  return <ChatJournal />;
+  return (
+    <>
+      <ChatJournal />
+      {checkInReminder && (
+        <CheckInDialog
+          open={!!checkInReminder}
+          onOpenChange={(open) => {
+            if (!open) setCheckInReminder(null);
+          }}
+          reminder={checkInReminder}
+        />
+      )}
+    </>
+  );
 };
 
 export default Index;
