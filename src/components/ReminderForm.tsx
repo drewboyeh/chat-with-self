@@ -73,7 +73,10 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
         is_active: true,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
 
       toast({
         title: "Reminder set!",
@@ -87,9 +90,16 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
       onSuccess?.();
     } catch (error) {
       console.error("Error creating reminder:", error);
+      
+      // Check if it's a table not found error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isTableMissing = errorMessage.includes("relation") && errorMessage.includes("does not exist");
+      
       toast({
         title: "Failed to create reminder",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description: isTableMissing
+          ? "Database table not found. Please run the migration in Supabase."
+          : errorMessage || "Please try again.",
         variant: "destructive",
       });
     } finally {
