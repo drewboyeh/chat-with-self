@@ -75,7 +75,12 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
 
       if (error) {
         console.error("Supabase error:", error);
-        throw error;
+        // Supabase errors have a specific structure
+        const supabaseError = new Error(
+          error.message || error.details || error.hint || "Database error occurred"
+        );
+        (supabaseError as any).code = error.code;
+        throw supabaseError;
       }
 
       toast({
@@ -91,15 +96,38 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
     } catch (error) {
       console.error("Error creating reminder:", error);
       
+      // Extract error message properly
+      let errorMessage = "Please try again.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object') {
+        // Handle Supabase error objects
+        const supabaseError = error as any;
+        if (supabaseError.message) {
+          errorMessage = supabaseError.message;
+        } else if (supabaseError.error) {
+          errorMessage = supabaseError.error;
+        } else if (supabaseError.details) {
+          errorMessage = supabaseError.details;
+        } else {
+          errorMessage = JSON.stringify(error);
+        }
+      } else if (error) {
+        errorMessage = String(error);
+      }
+      
       // Check if it's a table not found error
-      const errorMessage = error instanceof Error ? error.message : String(error);
       const isTableMissing = errorMessage.includes("relation") && errorMessage.includes("does not exist");
+      const isPermissionError = errorMessage.includes("permission") || errorMessage.includes("policy");
       
       toast({
         title: "Failed to create reminder",
         description: isTableMissing
           ? "Database table not found. Please run the migration in Supabase."
-          : errorMessage || "Please try again.",
+          : isPermissionError
+          ? "Permission denied. Check your Supabase RLS policies."
+          : errorMessage,
         variant: "destructive",
       });
     } finally {
