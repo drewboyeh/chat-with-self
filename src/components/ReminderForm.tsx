@@ -64,17 +64,31 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
       const reminderDateTime = new Date(`${finalDate}T${finalTime}`);
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-      const { error } = await supabase.from("reminders").insert({
+      console.log("Creating reminder with:", {
+        user_id: user.id,
+        task: task.trim(),
+        reminder_time: reminderDateTime.toISOString(),
+        recurrence,
+        timezone,
+      });
+
+      const { data, error } = await supabase.from("reminders").insert({
         user_id: user.id,
         task: task.trim(),
         reminder_time: reminderDateTime.toISOString(),
         recurrence,
         timezone,
         is_active: true,
-      });
+      }).select();
 
       if (error) {
-        console.error("Supabase error:", error);
+        console.error("Supabase error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          fullError: error,
+        });
         // Supabase errors have a specific structure
         const supabaseError = new Error(
           error.message || error.details || error.hint || "Database error occurred"
@@ -82,6 +96,8 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
         (supabaseError as any).code = error.code;
         throw supabaseError;
       }
+
+      console.log("Reminder created successfully:", data);
 
       toast({
         title: "Reminder set!",
