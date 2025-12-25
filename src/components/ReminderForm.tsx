@@ -62,14 +62,12 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
     try {
       // Combine date and time into a single timestamp (use final values)
       const reminderDateTime = new Date(`${finalDate}T${finalTime}`);
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
       console.log("Creating reminder with:", {
         user_id: user.id,
         task: task.trim(),
         reminder_time: reminderDateTime.toISOString(),
         recurrence,
-        timezone,
       });
 
       const { data, error } = await supabase.from("reminders").insert({
@@ -77,7 +75,6 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
         task: task.trim(),
         reminder_time: reminderDateTime.toISOString(),
         recurrence,
-        timezone,
         is_active: true,
       }).select();
 

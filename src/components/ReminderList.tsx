@@ -21,7 +21,7 @@ interface Reminder {
   id: string;
   task: string;
   reminder_time: string;
-  recurrence: "none" | "daily" | "weekly" | "weekdays";
+  recurrence: string | null;
   is_active: boolean;
   completed_at: string | null;
 }
