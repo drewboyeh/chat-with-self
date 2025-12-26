@@ -9,6 +9,7 @@ import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { TypingIndicator } from "./TypingIndicator";
 import { EmptyState } from "./EmptyState";
+import { Onboarding } from "./Onboarding";
 import { FutureVisions } from "./FutureVisions";
 import { EntrySidebar } from "./EntrySidebar";
 import { MoodTracker } from "./MoodTracker";
@@ -28,6 +29,7 @@ export function ChatJournal() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showFutureVisions, setShowFutureVisions] = useState(false);
   const [showMoodTracker, setShowMoodTracker] = useState(false);
   const [showMoodHistory, setShowMoodHistory] = useState(false);
@@ -37,6 +39,7 @@ export function ChatJournal() {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const { updateStreak } = useStreak();
@@ -66,6 +69,10 @@ export function ChatJournal() {
         });
       } else {
         setMessages(data as Message[]);
+        // Show onboarding if user has no entries
+        if (!data || data.length === 0) {
+          setShowOnboarding(true);
+        }
       }
       setIsFetching(false);
     };
@@ -243,6 +250,22 @@ export function ChatJournal() {
     );
   }
 
+  // Show onboarding for first-time users
+  if (showOnboarding && messages.length === 0) {
+    return (
+      <Onboarding
+        onComplete={() => setShowOnboarding(false)}
+        onStartWriting={() => {
+          setShowOnboarding(false);
+          // Focus input after a brief delay
+          setTimeout(() => {
+            inputRef.current?.focus();
+          }, 100);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex bg-background">
       {/* Entry Sidebar */}
@@ -266,7 +289,7 @@ export function ChatJournal() {
         />
 
         {messages.length === 0 ? (
-          <EmptyState onOpenFutureVisions={() => setShowFutureVisions(true)} />
+          <EmptyState onStartWriting={() => inputRef.current?.focus()} />
         ) : (
           <div className="flex-1 overflow-y-auto py-6 scrollbar-thin">
             <div className="max-w-3xl mx-auto space-y-1">
@@ -292,7 +315,11 @@ export function ChatJournal() {
           </div>
         )}
 
-        <ChatInput onSend={handleSend} disabled={isLoading} />
+        <ChatInput 
+          onSend={handleSend} 
+          disabled={isLoading}
+          inputRef={inputRef}
+        />
 
         {showFutureVisions && (
           <FutureVisions onClose={() => setShowFutureVisions(false)} />

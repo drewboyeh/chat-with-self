@@ -1,56 +1,35 @@
-import { Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { MessageSquare } from "lucide-react";
 
 interface EmptyStateProps {
-  onOpenFutureVisions?: () => void;
+  onStartWriting?: () => void;
 }
 
-export function EmptyState({ onOpenFutureVisions }: EmptyStateProps) {
+export function EmptyState({ onStartWriting }: EmptyStateProps) {
   return (
     <div className="flex-1 flex items-center justify-center px-4">
       <div className="text-center max-w-md animate-fade-in">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6">
-          <Sparkles className="w-8 h-8 text-primary" />
+          <MessageSquare className="w-8 h-8 text-primary" />
         </div>
         <h2 className="text-2xl font-serif font-medium text-foreground mb-3">
-          Welcome! I'm Your Past Self
+          Start Your First Entry
         </h2>
-        <p className="text-muted-foreground leading-relaxed mb-4">
-          I'm here to support you, remember your journey, and help you grow. 
-          Every entry you write becomes part of our shared memory. I'll remember 
-          your struggles, celebrate your wins, and be here whenever you need me.
+        <p className="text-muted-foreground leading-relaxed mb-6">
+          Share what's on your mind. I'm here to listen and remember.
         </p>
-        <p className="text-sm text-muted-foreground/80 italic mb-6">
-          Start by sharing what's on your mind - I'm listening, and I care.
-        </p>
-        <div className="mt-8 flex flex-wrap gap-2 justify-center">
+        <div className="mt-6 flex flex-wrap gap-2 justify-center">
           {["How are you feeling today?", "What's on your mind?", "Describe your day"].map(
             (prompt) => (
-              <span
+              <button
                 key={prompt}
-                className="px-4 py-2 rounded-full bg-secondary text-secondary-foreground text-sm"
+                onClick={onStartWriting}
+                className="px-4 py-2 rounded-full bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors cursor-pointer"
               >
                 {prompt}
-              </span>
+              </button>
             )
           )}
         </div>
-        
-        {onOpenFutureVisions && (
-          <div className="mt-8 pt-6 border-t border-border">
-            <p className="text-sm text-muted-foreground mb-3">
-              Or explore your possible futures
-            </p>
-            <Button
-              variant="outline"
-              onClick={onOpenFutureVisions}
-              className="text-primary border-primary/30 hover:bg-primary/10"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Future Visions
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

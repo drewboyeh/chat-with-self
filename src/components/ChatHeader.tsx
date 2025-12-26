@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { BookOpen, LogOut, Sparkles, Menu, X } from "lucide-react";
 import { StreakCounter } from "./StreakCounter";
-import { EmergencySupport } from "./EmergencySupport";
 import { WellnessHub } from "./WellnessHub";
 
 interface ChatHeaderProps {
@@ -56,7 +55,6 @@ export function ChatHeader({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <EmergencySupport />
           <StreakCounter />
           {onOpenMoodTracker && onOpenMoodHistory && onOpenPrompts && onOpenGoals && (
             <WellnessHub

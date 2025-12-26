@@ -1,0 +1,116 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { BookOpen, ArrowRight, Sparkles } from "lucide-react";
+
+interface OnboardingProps {
+  onComplete: () => void;
+  onStartWriting: () => void;
+}
+
+export function Onboarding({ onComplete, onStartWriting }: OnboardingProps) {
+  const [step, setStep] = useState(0);
+
+  const steps = [
+    {
+      title: "Welcome! I'm Your Past Self",
+      description: "I'm here to remember your journey and help you grow. Every entry you write becomes part of our shared memory.",
+      icon: BookOpen,
+    },
+    {
+      title: "I'll Remember Everything",
+      description: "I'll remember your struggles, celebrate your wins, and be here whenever you need me. Just start writing.",
+      icon: Sparkles,
+    },
+    {
+      title: "Ready to Begin?",
+      description: "Start by sharing what's on your mind. There's no right or wrong way to journal - just be yourself.",
+      icon: ArrowRight,
+    },
+  ];
+
+  const currentStep = steps[step];
+  const Icon = currentStep.icon;
+
+  if (step < steps.length - 1) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+        <div className="text-center max-w-md animate-fade-in">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-6">
+            <Icon className="w-10 h-10 text-primary" />
+          </div>
+          <h2 className="text-3xl font-serif font-medium text-foreground mb-4">
+            {currentStep.title}
+          </h2>
+          <p className="text-muted-foreground leading-relaxed text-lg mb-8">
+            {currentStep.description}
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            {step > 0 && (
+              <Button
+                variant="ghost"
+                onClick={() => setStep(step - 1)}
+                className="text-muted-foreground"
+              >
+                Back
+              </Button>
+            )}
+            <Button
+              onClick={() => setStep(step + 1)}
+              className="min-w-[120px]"
+            >
+              Next
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+          <div className="flex items-center justify-center gap-2 mt-6">
+            {steps.map((_, i) => (
+              <div
+                key={i}
+                className={`h-2 rounded-full transition-all ${
+                  i === step
+                    ? "w-8 bg-primary"
+                    : "w-2 bg-muted"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Final step - ready to start
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+      <div className="text-center max-w-md animate-fade-in">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-6">
+          <Icon className="w-10 h-10 text-primary" />
+        </div>
+        <h2 className="text-3xl font-serif font-medium text-foreground mb-4">
+          {currentStep.title}
+        </h2>
+        <p className="text-muted-foreground leading-relaxed text-lg mb-8">
+          {currentStep.description}
+        </p>
+        <div className="flex flex-col gap-3">
+          <Button
+            onClick={onStartWriting}
+            size="lg"
+            className="w-full"
+          >
+            Start Writing
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={onComplete}
+            className="text-muted-foreground"
+          >
+            Skip for now
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
