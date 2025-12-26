@@ -55,8 +55,20 @@ serve(async (req) => {
     }
 
     // Format Twilio phone number
-    const formattedTwilioPhone = twilioPhone.replace(/[^\d+]/g, '');
-    const twilioFromNumber = formattedTwilioPhone.startsWith('+') ? formattedTwilioPhone : `+1${formattedTwilioPhone}`;
+    const formattedTwilioPhone = twilioPhone.replace(/[^\d]/g, '');
+    const twilioFromNumber = `+1${formattedTwilioPhone.replace(/^1/, '')}`;
+    
+    // Check if user accidentally entered the Twilio number
+    const userDigits = formattedPhone.replace(/[^\d]/g, '');
+    const twilioDigits = twilioFromNumber.replace(/[^\d]/g, '');
+    
+    if (userDigits === twilioDigits || userDigits.endsWith(twilioDigits) || twilioDigits.endsWith(userDigits)) {
+      console.error('User entered Twilio number as their phone');
+      return new Response(
+        JSON.stringify({ error: 'Please enter your personal phone number, not the Twilio number' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Send SMS via Twilio
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
