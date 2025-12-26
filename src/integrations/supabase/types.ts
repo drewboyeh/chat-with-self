@@ -48,7 +48,7 @@ export type Database = {
           recurrence: string | null
           reminder_time: string
           task: string
-          timezone: string | null
+          timezone: string
           user_id: string
         }
         Insert: {
@@ -60,7 +60,7 @@ export type Database = {
           recurrence?: string | null
           reminder_time: string
           task: string
-          timezone?: string | null
+          timezone?: string
           user_id: string
         }
         Update: {
@@ -72,38 +72,38 @@ export type Database = {
           recurrence?: string | null
           reminder_time?: string
           task?: string
-          timezone?: string | null
+          timezone?: string
           user_id?: string
         }
         Relationships: []
       }
       user_streaks: {
         Row: {
-          id: string
-          user_id: string
-          current_streak: number
-          longest_streak: number
-          last_journal_date: string | null
           created_at: string
+          current_streak: number
+          id: string
+          last_journal_date: string | null
+          longest_streak: number
           updated_at: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          current_streak?: number
-          longest_streak?: number
-          last_journal_date?: string | null
           created_at?: string
+          current_streak?: number
+          id?: string
+          last_journal_date?: string | null
+          longest_streak?: number
           updated_at?: string
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          current_streak?: number
-          longest_streak?: number
-          last_journal_date?: string | null
           created_at?: string
+          current_streak?: number
+          id?: string
+          last_journal_date?: string | null
+          longest_streak?: number
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
