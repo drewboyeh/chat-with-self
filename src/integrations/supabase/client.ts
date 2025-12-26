@@ -11,7 +11,8 @@ if (typeof window !== 'undefined') {
   console.log('🔍 Supabase Key exists:', !!SUPABASE_PUBLISHABLE_KEY);
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     console.error('❌ Missing Supabase environment variables!');
-    console.error('Expected: VITE_SUPABASE_URL=https://zsvwohwgvjshtmeoulte.supabase.co');
+    console.error('Expected: VITE_SUPABASE_URL=https://fjkwpxppsblagioijjbs.supabase.co (Lovable project)');
+    console.error('OR: VITE_SUPABASE_URL=https://zsvwohwgvjshtmeoulte.supabase.co (Your project)');
   }
 }
 

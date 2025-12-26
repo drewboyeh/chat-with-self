@@ -48,6 +48,7 @@ export type Database = {
           recurrence: string | null
           reminder_time: string
           task: string
+          timezone: string | null
           user_id: string
         }
         Insert: {
@@ -59,6 +60,7 @@ export type Database = {
           recurrence?: string | null
           reminder_time: string
           task: string
+          timezone?: string | null
           user_id: string
         }
         Update: {
@@ -70,6 +72,7 @@ export type Database = {
           recurrence?: string | null
           reminder_time?: string
           task?: string
+          timezone?: string | null
           user_id?: string
         }
         Relationships: []

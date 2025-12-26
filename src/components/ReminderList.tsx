@@ -24,6 +24,7 @@ interface Reminder {
   recurrence: string | null;
   is_active: boolean;
   completed_at: string | null;
+  timezone: string | null;
 }
 
 export function ReminderList() {
@@ -127,6 +128,20 @@ export function ReminderList() {
           {activeReminders.map((reminder) => {
             const reminderDate = new Date(reminder.reminder_time);
             const isOverdue = isPast(reminderDate) && !isToday(reminderDate);
+            
+            // Format time in the reminder's timezone if available
+            const timezone = reminder.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const formattedTime = reminder.timezone
+              ? new Intl.DateTimeFormat("en-US", {
+                  timeZone: reminder.timezone,
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                }).format(reminderDate)
+              : format(reminderDate, "MMM d, yyyy 'at' h:mm a");
 
             return (
               <div
@@ -153,7 +168,10 @@ export function ReminderList() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {format(reminderDate, "MMM d, yyyy 'at' h:mm a")}
+                      {formattedTime}
+                      {reminder.timezone && reminder.timezone !== Intl.DateTimeFormat().resolvedOptions().timeZone && (
+                        <span className="ml-1 text-xs opacity-70">({reminder.timezone})</span>
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
@@ -194,7 +212,21 @@ export function ReminderList() {
       {inactiveReminders.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-muted-foreground">Inactive Reminders</h3>
-          {inactiveReminders.map((reminder) => (
+          {inactiveReminders.map((reminder) => {
+            const reminderDate = new Date(reminder.reminder_time);
+            const formattedTime = reminder.timezone
+              ? new Intl.DateTimeFormat("en-US", {
+                  timeZone: reminder.timezone,
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                }).format(reminderDate)
+              : format(reminderDate, "MMM d, yyyy 'at' h:mm a");
+            
+            return (
             <div
               key={reminder.id}
               className="p-4 rounded-lg border bg-muted/30 border-border opacity-60"
@@ -203,7 +235,10 @@ export function ReminderList() {
                 <div className="flex-1">
                   <p className="font-medium text-foreground line-through">{reminder.task}</p>
                   <p className="text-sm text-muted-foreground">
-                    {format(new Date(reminder.reminder_time), "MMM d, yyyy 'at' h:mm a")}
+                    {formattedTime}
+                    {reminder.timezone && reminder.timezone !== Intl.DateTimeFormat().resolvedOptions().timeZone && (
+                      <span className="ml-1 text-xs opacity-70">({reminder.timezone})</span>
+                    )}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
@@ -226,7 +261,7 @@ export function ReminderList() {
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 
