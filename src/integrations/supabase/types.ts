@@ -77,6 +77,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_streaks: {
+        Row: {
+          id: string
+          user_id: string
+          current_streak: number
+          longest_streak: number
+          last_journal_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          current_streak?: number
+          longest_streak?: number
+          last_journal_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          current_streak?: number
+          longest_streak?: number
+          last_journal_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

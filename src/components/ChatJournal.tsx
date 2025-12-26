@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useStreak } from "@/hooks/useStreak";
 import { ChatHeader } from "./ChatHeader";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
@@ -30,6 +31,7 @@ export function ChatJournal() {
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const { user } = useAuth();
   const { toast } = useToast();
+  const { updateStreak } = useStreak();
 
   // Update sidebar state when screen size changes
   useEffect(() => {
@@ -103,6 +105,16 @@ export function ChatJournal() {
     const userMessage = await saveMessage(message, "user");
     if (userMessage) {
       setMessages((prev) => [...prev, { ...userMessage, isNew: true }]);
+      
+      // Update streak when user creates a journal entry
+      const milestone = await updateStreak();
+      if (milestone) {
+        toast({
+          title: milestone.message,
+          description: `You've journaled for ${milestone.milestone} consecutive days!`,
+          duration: 5000,
+        });
+      }
     }
 
     setIsLoading(true);
