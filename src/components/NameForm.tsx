@@ -4,7 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, ArrowRight, Phone, Users, ArrowLeft } from "lucide-react";
+import { Sparkles, Loader2, ArrowRight, Phone, Users, ArrowLeft, ShieldCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 const therapistStyles = [
   {
@@ -40,11 +46,14 @@ const therapistStyles = [
 ];
 
 export function NameForm() {
-  const [step, setStep] = useState(1); // 1 = welcome, 2 = phone, 3 = style, 4 = name
+  const [step, setStep] = useState(1); // 1 = welcome, 2 = phone, 3 = verify, 4 = style, 5 = name
   const [phone, setPhone] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
   const [selectedStyle, setSelectedStyle] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const { signInAnonymously } = useAuth();
   const { toast } = useToast();
 
@@ -52,15 +61,110 @@ export function NameForm() {
     setStep(2);
   };
 
-  const handlePhoneSubmit = (e: React.FormEvent) => {
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone.trim()) return;
-    setStep(3);
+
+    setSendingCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-verification-code', {
+        body: { phone: phone.trim() }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: "Code sent!",
+        description: "Check your phone for the verification code",
+      });
+      setStep(3);
+    } catch (error: any) {
+      console.error('Error sending code:', error);
+      toast({
+        title: "Failed to send code",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (verificationCode.length !== 6) return;
+
+    setVerifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-code', {
+        body: { phone: phone.trim(), code: verificationCode }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: "Phone verified!",
+        description: "Your phone number has been verified",
+      });
+      setStep(4);
+    } catch (error: any) {
+      console.error('Error verifying code:', error);
+      toast({
+        title: "Verification failed",
+        description: error.message || "Invalid code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setSendingCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-verification-code', {
+        body: { phone: phone.trim() }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: "Code resent!",
+        description: "Check your phone for the new verification code",
+      });
+      setVerificationCode("");
+    } catch (error: any) {
+      toast({
+        title: "Failed to resend code",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingCode(false);
+    }
   };
 
   const handleStyleSelect = (styleId: string) => {
     setSelectedStyle(styleId);
-    setStep(4);
+    setStep(5);
   };
 
   const handleNameSubmit = async (e: React.FormEvent) => {
@@ -87,13 +191,16 @@ export function NameForm() {
   };
 
   const handleBack = () => {
+    if (step === 3) {
+      setVerificationCode("");
+    }
     setStep((prev) => prev - 1);
   };
 
-  // Step indicators
+  // Step indicators - now 5 steps
   const StepIndicator = ({ current }: { current: number }) => (
     <div className="flex items-center justify-center gap-2 mt-6">
-      {[1, 2, 3, 4].map((s) => (
+      {[1, 2, 3, 4, 5].map((s) => (
         <div
           key={s}
           className={`h-2 rounded-full transition-all ${
@@ -148,7 +255,7 @@ export function NameForm() {
               Your Phone Number
             </h1>
             <p className="text-muted-foreground">
-              We'll use this to sync your data across devices
+              We'll send you a verification code
             </p>
           </div>
 
@@ -184,11 +291,17 @@ export function NameForm() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!phone.trim()}
+                  disabled={!phone.trim() || sendingCode}
                   className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-warm transition-all duration-200"
                 >
-                  Continue
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  {sendingCode ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      Send Code
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
                 </Button>
               </div>
             </form>
@@ -200,8 +313,92 @@ export function NameForm() {
     );
   }
 
-  // Step 3: Therapist Style
+  // Step 3: Verify Code
   if (step === 3) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+        <div className="w-full max-w-md animate-fade-in">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6">
+              <ShieldCheck className="w-8 h-8 text-primary" />
+            </div>
+            <h1 className="text-3xl font-serif font-medium text-foreground mb-3">
+              Enter Verification Code
+            </h1>
+            <p className="text-muted-foreground">
+              We sent a 6-digit code to {phone}
+            </p>
+          </div>
+
+          <div className="bg-card rounded-2xl p-8 shadow-soft border border-border">
+            <form onSubmit={handleVerifyCode} className="space-y-6">
+              <div className="space-y-4">
+                <Label className="text-sm font-medium text-center block">
+                  Verification code
+                </Label>
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={verificationCode}
+                    onChange={(value) => setVerificationCode(value)}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={sendingCode}
+                    className="text-sm text-primary hover:underline disabled:opacity-50"
+                  >
+                    {sendingCode ? "Sending..." : "Didn't receive a code? Resend"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBack}
+                  className="h-12 rounded-xl px-4"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={verificationCode.length !== 6 || verifying}
+                  className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-warm transition-all duration-200"
+                >
+                  {verifying ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      Verify
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          <StepIndicator current={3} />
+        </div>
+      </div>
+    );
+  }
+
+  // Step 4: Therapist Style
+  if (step === 4) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-background">
         <div className="w-full max-w-md animate-fade-in">
@@ -252,13 +449,13 @@ export function NameForm() {
             Back
           </Button>
 
-          <StepIndicator current={3} />
+          <StepIndicator current={4} />
         </div>
       </div>
     );
   }
 
-  // Step 4: Name
+  // Step 5: Name
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <div className="w-full max-w-md animate-fade-in">
@@ -317,7 +514,7 @@ export function NameForm() {
           </form>
         </div>
 
-        <StepIndicator current={4} />
+        <StepIndicator current={5} />
       </div>
     </div>
   );
