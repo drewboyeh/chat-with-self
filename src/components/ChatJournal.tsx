@@ -11,6 +11,10 @@ import { TypingIndicator } from "./TypingIndicator";
 import { EmptyState } from "./EmptyState";
 import { FutureVisions } from "./FutureVisions";
 import { EntrySidebar } from "./EntrySidebar";
+import { MoodTracker } from "./MoodTracker";
+import { MoodHistory } from "./MoodHistory";
+import { GuidedPrompts } from "./GuidedPrompts";
+import { GoalTracker } from "./GoalTracker";
 
 interface Message {
   id: string;
@@ -25,8 +29,12 @@ export function ChatJournal() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [showFutureVisions, setShowFutureVisions] = useState(false);
+  const [showMoodTracker, setShowMoodTracker] = useState(false);
+  const [showMoodHistory, setShowMoodHistory] = useState(false);
+  const [showPrompts, setShowPrompts] = useState(false);
+  const [showGoals, setShowGoals] = useState(false);
   const isMobile = useIsMobile();
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile); // Open by default on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const { user } = useAuth();
@@ -251,6 +259,10 @@ export function ChatJournal() {
           onOpenFutureVisions={() => setShowFutureVisions(true)}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           sidebarOpen={sidebarOpen}
+          onOpenMoodTracker={() => setShowMoodTracker(true)}
+          onOpenMoodHistory={() => setShowMoodHistory(true)}
+          onOpenPrompts={() => setShowPrompts(true)}
+          onOpenGoals={() => setShowGoals(true)}
         />
 
         {messages.length === 0 ? (
@@ -285,6 +297,11 @@ export function ChatJournal() {
         {showFutureVisions && (
           <FutureVisions onClose={() => setShowFutureVisions(false)} />
         )}
+        
+        <MoodTracker open={showMoodTracker} onOpenChange={setShowMoodTracker} />
+        <MoodHistory open={showMoodHistory} onOpenChange={setShowMoodHistory} />
+        <GuidedPrompts open={showPrompts} onOpenChange={setShowPrompts} />
+        <GoalTracker open={showGoals} onOpenChange={setShowGoals} />
       </div>
     </div>
   );

@@ -3,14 +3,27 @@ import { useAuth } from "@/hooks/useAuth";
 import { BookOpen, LogOut, Sparkles, Menu, X } from "lucide-react";
 import { StreakCounter } from "./StreakCounter";
 import { EmergencySupport } from "./EmergencySupport";
+import { WellnessHub } from "./WellnessHub";
 
 interface ChatHeaderProps {
   onOpenFutureVisions?: () => void;
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
+  onOpenMoodTracker?: () => void;
+  onOpenMoodHistory?: () => void;
+  onOpenPrompts?: () => void;
+  onOpenGoals?: () => void;
 }
 
-export function ChatHeader({ onOpenFutureVisions, onToggleSidebar, sidebarOpen }: ChatHeaderProps) {
+export function ChatHeader({
+  onOpenFutureVisions,
+  onToggleSidebar,
+  sidebarOpen,
+  onOpenMoodTracker,
+  onOpenMoodHistory,
+  onOpenPrompts,
+  onOpenGoals,
+}: ChatHeaderProps) {
   const { signOut } = useAuth();
 
   return (
@@ -45,6 +58,14 @@ export function ChatHeader({ onOpenFutureVisions, onToggleSidebar, sidebarOpen }
         <div className="flex items-center gap-2">
           <EmergencySupport />
           <StreakCounter />
+          {onOpenMoodTracker && onOpenMoodHistory && onOpenPrompts && onOpenGoals && (
+            <WellnessHub
+              onOpenMoodTracker={onOpenMoodTracker}
+              onOpenMoodHistory={onOpenMoodHistory}
+              onOpenPrompts={onOpenPrompts}
+              onOpenGoals={onOpenGoals}
+            />
+          )}
           <Button
             variant="outline"
             size="sm"

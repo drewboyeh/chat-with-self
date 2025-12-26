@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      goals: {
+        Row: {
+          category: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          progress: number
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          progress?: number
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          progress?: number
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           content: string
@@ -34,6 +76,60 @@ export type Database = {
           created_at?: string
           id?: string
           role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mood_entries: {
+        Row: {
+          created_at: string
+          id: string
+          mood: string
+          mood_score: number
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mood: string
+          mood_score: number
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mood?: string
+          mood_score?: number
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      prompt_responses: {
+        Row: {
+          created_at: string
+          id: string
+          prompt_category: string
+          prompt_text: string
+          response: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt_category: string
+          prompt_text: string
+          response: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt_category?: string
+          prompt_text?: string
+          response?: string
           user_id?: string
         }
         Relationships: []
