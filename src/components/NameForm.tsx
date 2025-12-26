@@ -71,7 +71,7 @@ export function NameForm() {
                 className="h-12 rounded-xl bg-background border-border focus:border-primary focus:ring-primary/20 text-lg"
               />
               <p className="text-xs text-muted-foreground">
-                This is just for personalization. Your data stays private.
+                This is just for personalization. Your data stays private and secure, even if others use the same name.
               </p>
             </div>
 
