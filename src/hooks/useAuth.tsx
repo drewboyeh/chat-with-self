@@ -6,8 +6,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  userName: string | null;
+  signInAnonymously: (name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -17,12 +17,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      // Get user name from metadata
+      if (session?.user) {
+        const name = session.user.user_metadata?.name || null;
+        setUserName(name);
+      }
       setLoading(false);
     });
 
@@ -31,6 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        // Get user name from metadata
+        if (session?.user) {
+          const name = session.user.user_metadata?.name || null;
+          setUserName(name);
+        }
         setLoading(false);
       }
     );
@@ -38,22 +49,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
-  };
+  const signInAnonymously = async (name: string) => {
+    // Sign in anonymously with name in metadata
+    const { data, error } = await supabase.auth.signInAnonymously({
+      options: {
+        data: {
+          name: name,
+        },
+      },
+    });
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    if (data?.user) {
+      setUserName(name);
+    }
+
     return { error: error as Error | null };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setUserName(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, userName, signInAnonymously, signOut }}>
       {children}
     </AuthContext.Provider>
   );

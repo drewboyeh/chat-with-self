@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useReminders } from "@/hooks/useReminders";
-import { AuthForm } from "@/components/AuthForm";
+import { NameForm } from "@/components/NameForm";
 import { ChatJournal } from "@/components/ChatJournal";
 import { CheckInDialog } from "@/components/CheckInDialog";
 
@@ -20,7 +20,7 @@ const Index = () => {
   }
 
   if (!user) {
-    return <AuthForm />;
+    return <NameForm />;
   }
 
   return (
