@@ -49,13 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInAnonymously = async (name: string) => {
-    // Sign in anonymously with name in metadata
+  const signInAnonymously = async (name: string, birthday?: string) => {
+    // Sign in anonymously with name and birthday in metadata
+    const metadata: { name: string; birthday?: string } = { name };
+    if (birthday) {
+      metadata.birthday = birthday;
+    }
+
     const { data, error } = await supabase.auth.signInAnonymously({
       options: {
-        data: {
-          name: name,
-        },
+        data: metadata,
       },
     });
 
