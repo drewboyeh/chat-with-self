@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { BookOpen, LogOut, Sparkles, Menu, X } from "lucide-react";
 import { StreakCounter } from "./StreakCounter";
+import { EmergencySupport } from "./EmergencySupport";
 
 interface ChatHeaderProps {
   onOpenFutureVisions?: () => void;
@@ -42,6 +43,7 @@ export function ChatHeader({ onOpenFutureVisions, onToggleSidebar, sidebarOpen }
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <EmergencySupport />
           <StreakCounter />
           <Button
             variant="outline"
