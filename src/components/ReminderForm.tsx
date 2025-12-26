@@ -249,21 +249,7 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
             id="date"
             type="date"
             value={date}
-            onChange={(e) => {
-              const selectedDate = e.target.value;
-              const today = new Date().toISOString().split("T")[0];
-              
-              // Allow today and future dates
-              if (selectedDate >= today) {
-                setDate(selectedDate);
-              } else {
-                toast({
-                  title: "Invalid date",
-                  description: "Please select today or a future date.",
-                  variant: "destructive",
-                });
-              }
-            }}
+            onChange={(e) => setDate(e.target.value)}
             min={new Date().toISOString().split("T")[0]}
             max="2099-12-31"
             required
