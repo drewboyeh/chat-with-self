@@ -7,7 +7,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   userName: string | null;
-  signInAnonymously: (name: string, birthday?: string) => Promise<{ error: Error | null }>;
+  therapistStyle: string | null;
+  signInAnonymously: (name: string, phone: string, therapistStyle: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -18,6 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string | null>(null);
+  const [therapistStyle, setTherapistStyle] = useState<string | null>(null);
 
   useEffect(() => {
     // Get initial session
@@ -27,7 +29,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Get user name from metadata
       if (session?.user) {
         const name = session.user.user_metadata?.name || null;
+        const style = session.user.user_metadata?.therapist_style || null;
         setUserName(name);
+        setTherapistStyle(style);
       }
       setLoading(false);
     });
@@ -40,7 +44,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Get user name from metadata
         if (session?.user) {
           const name = session.user.user_metadata?.name || null;
+          const style = session.user.user_metadata?.therapist_style || null;
           setUserName(name);
+          setTherapistStyle(style);
         }
         setLoading(false);
       }
@@ -49,21 +55,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInAnonymously = async (name: string, birthday?: string) => {
-    // Sign in anonymously with name and birthday in metadata
-    const metadata: { name: string; birthday?: string } = { name };
-    if (birthday) {
-      metadata.birthday = birthday;
-    }
-
+  const signInAnonymously = async (name: string, phone: string, therapistStyle: string) => {
     const { data, error } = await supabase.auth.signInAnonymously({
       options: {
-        data: metadata,
+        data: {
+          name,
+          phone,
+          therapist_style: therapistStyle,
+        },
       },
     });
 
     if (data?.user) {
       setUserName(name);
+      setTherapistStyle(therapistStyle);
     }
 
     return { error: error as Error | null };
@@ -72,10 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setUserName(null);
+    setTherapistStyle(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, userName, signInAnonymously, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, userName, therapistStyle, signInAnonymously, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -40,7 +40,7 @@ export function ChatJournal() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { user } = useAuth();
+  const { user, therapistStyle } = useAuth();
   const { toast } = useToast();
   const { updateStreak } = useStreak();
 
@@ -143,7 +143,7 @@ export function ChatJournal() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ message, userId: user.id }),
+          body: JSON.stringify({ message, userId: user.id, therapistStyle: therapistStyle || "practical" }),
         }
       );
 
