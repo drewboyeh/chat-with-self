@@ -6,10 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// In-memory store for verification codes (shared via edge function context)
-const verificationCodes = new Map<string, { code: string; expiresAt: number }>();
-
 serve(async (req) => {
+  // Initialize Supabase client
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -31,10 +32,17 @@ serve(async (req) => {
 
     console.log(`Verifying code for ${formattedPhone}`);
 
-    // Get stored code
-    const storedData = verificationCodes.get(formattedPhone);
+    // Get stored code from database
+    const { data: storedData, error: fetchError } = await supabase
+      .from('verification_codes')
+      .select('*')
+      .eq('phone', formattedPhone)
+      .eq('verified', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
 
-    if (!storedData) {
+    if (fetchError || !storedData) {
       console.log('No code found for phone number');
       return new Response(
         JSON.stringify({ error: 'No verification code found. Please request a new one.' }),
@@ -43,8 +51,14 @@ serve(async (req) => {
     }
 
     // Check if code expired
-    if (Date.now() > storedData.expiresAt) {
-      verificationCodes.delete(formattedPhone);
+    const expiresAt = new Date(storedData.expires_at).getTime();
+    if (Date.now() > expiresAt) {
+      // Mark as expired
+      await supabase
+        .from('verification_codes')
+        .update({ verified: true })
+        .eq('id', storedData.id);
+      
       console.log('Code expired');
       return new Response(
         JSON.stringify({ error: 'Verification code expired. Please request a new one.' }),
@@ -61,8 +75,12 @@ serve(async (req) => {
       );
     }
 
-    // Code is valid - remove it from store
-    verificationCodes.delete(formattedPhone);
+    // Code is valid - mark as verified
+    await supabase
+      .from('verification_codes')
+      .update({ verified: true })
+      .eq('id', storedData.id);
+    
     console.log(`Phone ${formattedPhone} verified successfully`);
 
     return new Response(
@@ -79,11 +97,3 @@ serve(async (req) => {
     );
   }
 });
-
-// Store code function (called from send-verification-code)
-export function storeCode(phone: string, code: string) {
-  verificationCodes.set(phone, {
-    code,
-    expiresAt: Date.now() + 10 * 60 * 1000
-  });
-}

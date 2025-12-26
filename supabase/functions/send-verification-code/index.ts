@@ -1,14 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// In-memory store for verification codes (will be replaced with DB in production)
-const verificationCodes = new Map<string, { code: string; expiresAt: number }>();
-
 serve(async (req) => {
+  // Initialize Supabase client
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -33,11 +35,32 @@ serve(async (req) => {
     // Generate 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Store code with 10 minute expiry
-    verificationCodes.set(formattedPhone, {
-      code,
-      expiresAt: Date.now() + 10 * 60 * 1000
-    });
+    // Calculate expiry (10 minutes from now)
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    // Clean up old codes for this phone number
+    await supabase
+      .from('verification_codes')
+      .delete()
+      .eq('phone', formattedPhone);
+
+    // Store code in database
+    const { error: dbError } = await supabase
+      .from('verification_codes')
+      .insert({
+        phone: formattedPhone,
+        code: code,
+        expires_at: expiresAt,
+        verified: false
+      });
+
+    if (dbError) {
+      console.error('Error storing verification code:', dbError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to store verification code' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     console.log(`Sending verification code to ${formattedPhone}`);
 
@@ -113,6 +136,3 @@ serve(async (req) => {
     );
   }
 });
-
-// Export for verify function to access
-export { verificationCodes };
