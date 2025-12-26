@@ -101,10 +101,25 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
       return;
     }
 
+    // Validate that the date/time is not in the past
+    const reminderDateTime = new Date(`${finalDate}T${finalTime}`);
+    const now = new Date();
+    
+    // Allow reminders up to 1 minute in the past (for edge cases)
+    if (reminderDateTime.getTime() < now.getTime() - 60 * 1000) {
+      toast({
+        title: "Invalid date/time",
+        description: "Please select a date and time in the future.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // Convert date/time from user's timezone to UTC for storage
+      // Note: reminderDateTime was already calculated in validation above
+      // But we need to recalculate it here for timezone conversion
       const [year, month, day] = finalDate.split("-").map(Number);
       const [hours, minutes] = finalTime.split(":").map(Number);
       
@@ -249,27 +264,7 @@ export function ReminderForm({ onSuccess, onCancel, initialTask = "" }: Reminder
             id="date"
             type="date"
             value={date}
-            onChange={(e) => {
-              const selected = e.target.value;
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const selectedDate = new Date(selected);
-              selectedDate.setHours(0, 0, 0, 0);
-              
-              // Allow today and future dates
-              if (selectedDate >= today) {
-                setDate(selected);
-              } else {
-                // Still allow it but show a warning - user might want to set it for later today
-                setDate(selected);
-                toast({
-                  title: "Past date selected",
-                  description: "Reminders for past dates may not trigger notifications.",
-                  variant: "destructive",
-                });
-              }
-            }}
-            min={new Date().toISOString().split("T")[0]}
+            onChange={(e) => setDate(e.target.value)}
             max="2099-12-31"
             required
           />
