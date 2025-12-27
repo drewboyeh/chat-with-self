@@ -184,6 +184,13 @@ export function NameForm() {
         throw new Error(data.error);
       }
 
+      // Temporary testing aid: if backend returns code (preview only), log it
+      if (data?.code) {
+        console.log('🔐 Verification code (for testing):', data.code);
+        console.log('📱 Message SID:', data.messageSid);
+        console.log('📊 Message Status:', data.messageStatus);
+      }
+
       toast({
         title: "Code resent!",
         description: "Check your phone for the new verification code",
