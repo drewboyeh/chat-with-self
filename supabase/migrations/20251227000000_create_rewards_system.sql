@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.user_rewards (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL UNIQUE,
   total_points INTEGER NOT NULL DEFAULT 0,
+  level INTEGER NOT NULL DEFAULT 1,
   completed_reminders INTEGER NOT NULL DEFAULT 0,
   completed_goals INTEGER NOT NULL DEFAULT 0,
   journal_entries INTEGER NOT NULL DEFAULT 0,

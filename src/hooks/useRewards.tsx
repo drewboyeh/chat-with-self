@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { calculateLevel, checkLevelUp, type LevelInfo } from "@/lib/levelSystem";
 
 interface UserRewards {
   id: string;
   user_id: string;
   total_points: number;
+  level: number;
   completed_reminders: number;
   completed_goals: number;
   journal_entries: number;
@@ -38,6 +40,7 @@ export function useRewards() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [recentPoints, setRecentPoints] = useState<PointsHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [levelInfo, setLevelInfo] = useState<LevelInfo | null>(null);
 
   const fetchRewards = useCallback(async () => {
     if (!user) {
@@ -76,6 +79,12 @@ export function useRewards() {
       }
 
       setRewards(rewardsData);
+
+      // Calculate level info
+      if (rewardsData) {
+        const { getLevelInfo } = await import("@/lib/levelSystem");
+        setLevelInfo(getLevelInfo(rewardsData.total_points));
+      }
 
       // Fetch achievements
       const { data: achievementsData, error: achievementsError } = await supabase
@@ -133,10 +142,37 @@ export function useRewards() {
       source: string,
       sourceId?: string,
       description?: string
-    ): Promise<{ success: boolean; newAchievements: Achievement[] }> => {
-      if (!user || points <= 0) return { success: false, newAchievements: [] };
+    ): Promise<{ 
+      success: boolean; 
+      newAchievements: Achievement[];
+      leveledUp: boolean;
+      oldLevel: number;
+      newLevel: number;
+    }> => {
+      if (!user || points <= 0) {
+        return { 
+          success: false, 
+          newAchievements: [],
+          leveledUp: false,
+          oldLevel: 1,
+          newLevel: 1,
+        };
+      }
 
       try {
+        // Get current rewards to check for level up
+        const { data: currentRewards } = await supabase
+          .from("user_rewards")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+
+        const oldPoints = currentRewards?.total_points || 0;
+        const oldLevel = currentRewards?.level || calculateLevel(oldPoints);
+        const newPoints = oldPoints + points;
+        const newLevel = calculateLevel(newPoints);
+        const leveledUp = newLevel > oldLevel;
+
         // Add points to user_rewards
         const { error: updateError } = await supabase.rpc("add_points", {
           p_user_id: user.id,
@@ -148,17 +184,13 @@ export function useRewards() {
 
         // If RPC doesn't exist, do it manually
         if (updateError && updateError.message.includes("function")) {
-          // Get current rewards
-          const { data: currentRewards } = await supabase
-            .from("user_rewards")
-            .select("*")
-            .eq("user_id", user.id)
-            .single();
-
           if (currentRewards) {
             await supabase
               .from("user_rewards")
-              .update({ total_points: currentRewards.total_points + points })
+              .update({ 
+                total_points: newPoints,
+                level: newLevel, // Update level
+              })
               .eq("user_id", user.id);
           }
 
@@ -170,6 +202,12 @@ export function useRewards() {
             source_id: sourceId || null,
             description: description || null,
           });
+        } else if (leveledUp) {
+          // Update level if RPC was used
+          await supabase
+            .from("user_rewards")
+            .update({ level: newLevel })
+            .eq("user_id", user.id);
         }
 
         // Check for new achievements
@@ -178,10 +216,22 @@ export function useRewards() {
         // Refresh rewards
         await fetchRewards();
 
-        return { success: true, newAchievements };
+        return { 
+          success: true, 
+          newAchievements,
+          leveledUp,
+          oldLevel,
+          newLevel,
+        };
       } catch (error) {
         console.error("Error awarding points:", error);
-        return { success: false, newAchievements: [] };
+        return { 
+          success: false, 
+          newAchievements: [],
+          leveledUp: false,
+          oldLevel: 1,
+          newLevel: 1,
+        };
       }
     },
     [user, fetchRewards]
@@ -338,6 +388,7 @@ export function useRewards() {
     achievements,
     recentPoints,
     isLoading,
+    levelInfo,
     awardPoints,
     incrementReminder,
     incrementGoal,

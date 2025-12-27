@@ -16,6 +16,7 @@ import { useRewards } from "@/hooks/useRewards";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles } from "lucide-react";
 import { CelebrationDialog } from "./CelebrationDialog";
+import { LevelUpDialog } from "./LevelUpDialog";
 
 interface CheckInDialogProps {
   open: boolean;
@@ -31,12 +32,14 @@ export function CheckInDialog({ open, onOpenChange, reminder }: CheckInDialogPro
   const [reflection, setReflection] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showLevelUp, setShowLevelUp] = useState(false);
   const [celebrationType, setCelebrationType] = useState<"points" | "achievement" | "reminder">("points");
   const [celebrationPoints, setCelebrationPoints] = useState(0);
   const [newAchievements, setNewAchievements] = useState<any[]>([]);
+  const [levelUpInfo, setLevelUpInfo] = useState<{ oldLevel: number; newLevel: number; totalPoints: number } | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { awardPoints, incrementReminder } = useRewards();
+  const { awardPoints, incrementReminder, rewards } = useRewards();
 
   const handleSubmit = async () => {
     if (completed === null) {
@@ -89,8 +92,16 @@ export function CheckInDialog({ open, onOpenChange, reminder }: CheckInDialogPro
         // Increment reminder count and check for achievements
         const achievements = await incrementReminder();
 
-        // Show celebration
-        if (result.success || achievements.length > 0) {
+        // Check for level up first (most important!)
+        if (result.leveledUp && rewards) {
+          setLevelUpInfo({
+            oldLevel: result.oldLevel,
+            newLevel: result.newLevel,
+            totalPoints: rewards.total_points + pointsAwarded,
+          });
+          setShowLevelUp(true);
+        } else if (result.success || achievements.length > 0) {
+          // Show celebration for achievements or points
           if (achievements.length > 0) {
             setNewAchievements(achievements);
             setCelebrationType("achievement");
@@ -196,7 +207,7 @@ export function CheckInDialog({ open, onOpenChange, reminder }: CheckInDialogPro
     </Dialog>
 
     <CelebrationDialog
-      open={showCelebration}
+      open={showCelebration && !showLevelUp}
       onClose={() => {
         setShowCelebration(false);
         setNewAchievements([]);
@@ -218,6 +229,23 @@ export function CheckInDialog({ open, onOpenChange, reminder }: CheckInDialogPro
           : undefined
       }
     />
+
+    {levelUpInfo && (
+      <LevelUpDialog
+        open={showLevelUp}
+        onClose={() => {
+          setShowLevelUp(false);
+          setLevelUpInfo(null);
+          // Show celebration after level up if there are achievements
+          if (newAchievements.length > 0) {
+            setShowCelebration(true);
+          }
+        }}
+        oldLevel={levelUpInfo.oldLevel}
+        newLevel={levelUpInfo.newLevel}
+        totalPoints={levelUpInfo.totalPoints}
+      />
+    )}
     </>
   );
 }

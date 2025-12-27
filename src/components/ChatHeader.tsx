@@ -3,6 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { BookOpen, LogOut, Sparkles, Menu, X } from "lucide-react";
 import { StreakCounter } from "./StreakCounter";
 import { WellnessHub } from "./WellnessHub";
+import { LevelDisplay } from "./LevelDisplay";
+import { useRewards } from "@/hooks/useRewards";
 
 interface ChatHeaderProps {
   onOpenFutureVisions?: () => void;
@@ -24,6 +26,7 @@ export function ChatHeader({
   onOpenGoals,
 }: ChatHeaderProps) {
   const { signOut } = useAuth();
+  const { rewards } = useRewards();
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
@@ -55,6 +58,11 @@ export function ChatHeader({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {rewards && (
+            <div className="hidden md:block">
+              <LevelDisplay totalPoints={rewards.total_points} size="sm" showProgress={false} />
+            </div>
+          )}
           <StreakCounter />
           {onOpenMoodTracker && onOpenMoodHistory && onOpenPrompts && onOpenGoals && (
             <WellnessHub
