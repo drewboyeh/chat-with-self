@@ -1,18 +1,32 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function formatUsPhoneToE164(input: string): string {
+  const clean = input.replace(/[^\d+]/g, "").trim();
+  if (clean.startsWith("+")) return clean;
+  // Default to US +1 for 10-digit inputs
+  const digits = clean.replace(/\D/g, "");
+  return `+1${digits}`;
+}
+
+function formatTwilioFromNumber(input: string): string {
+  const trimmed = input.trim();
+  if (trimmed.startsWith("+")) return trimmed;
+  const digits = trimmed.replace(/\D/g, "");
+  // Assume US if no + provided
+  const withoutLeading1 = digits.replace(/^1/, "");
+  return `+1${withoutLeading1}`;
+}
+
 serve(async (req) => {
-  // Initialize Supabase client
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -20,195 +34,150 @@ serve(async (req) => {
     const { phone } = await req.json();
 
     if (!phone) {
-      return new Response(
-        JSON.stringify({ error: 'Phone number is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Phone number is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Clean phone number - remove all non-digits except leading +
-    const cleanPhone = phone.replace(/[^\d+]/g, '');
-    
-    // Ensure phone has country code
-    const formattedPhone = cleanPhone.startsWith('+') ? cleanPhone : `+1${cleanPhone}`;
+    const formattedPhone = formatUsPhoneToE164(String(phone));
 
     // Generate 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Calculate expiry (10 minutes from now)
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-    // Clean up old codes for this phone number
-    await supabase
-      .from('verification_codes')
-      .delete()
-      .eq('phone', formattedPhone);
-
-    // Store code in database
-    const { error: dbError } = await supabase
-      .from('verification_codes')
-      .insert({
-        phone: formattedPhone,
-        code: code,
-        expires_at: expiresAt,
-        verified: false
-      });
-
-    if (dbError) {
-      console.error('Error storing verification code:', dbError);
-      // Check if table doesn't exist
-      if (dbError.message?.includes('relation') && dbError.message?.includes('does not exist')) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Database table not found. Please run the verification_codes migration in Supabase.' 
-          }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      return new Response(
-        JSON.stringify({ error: `Failed to store verification code: ${dbError.message}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const expiresAtIso = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
     console.log(`Sending verification code to ${formattedPhone}`);
 
-    // Get Twilio credentials
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const twilioPhone = Deno.env.get('TWILIO_PHONE_NUMBER');
+    // Backend credentials
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    console.log('Twilio credentials check:', {
-      hasAccountSid: !!accountSid,
-      hasAuthToken: !!authToken,
-      hasTwilioPhone: !!twilioPhone,
-      twilioPhone: twilioPhone ? `${twilioPhone.substring(0, 4)}****` : 'missing'
-    });
+    // Twilio credentials
+    const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+    const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+    const twilioPhone = Deno.env.get("TWILIO_PHONE_NUMBER");
 
     if (!accountSid || !authToken || !twilioPhone) {
-      console.error('Missing Twilio credentials:', {
-        accountSid: accountSid ? 'present' : 'missing',
-        authToken: authToken ? 'present' : 'missing',
-        twilioPhone: twilioPhone ? 'present' : 'missing'
+      console.error("Missing Twilio credentials");
+      return new Response(JSON.stringify({ error: "SMS service not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("Missing backend credentials for verification code storage");
+      return new Response(JSON.stringify({ error: "Backend not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const twilioFromNumber = formatTwilioFromNumber(twilioPhone);
+
+    // Basic sanity check: user didn't enter the Twilio number
+    const userDigits = formattedPhone.replace(/[^\d]/g, "");
+    const twilioDigits = twilioFromNumber.replace(/[^\d]/g, "");
+    if (
+      userDigits === twilioDigits ||
+      userDigits.endsWith(twilioDigits) ||
+      twilioDigits.endsWith(userDigits)
+    ) {
+      console.error("User entered Twilio number as their phone");
       return new Response(
-        JSON.stringify({ 
-          error: 'SMS service not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in Supabase Edge Functions secrets.' 
+        JSON.stringify({
+          error: "Please enter your personal phone number, not the SMS sender number",
         }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
-    // Format Twilio phone number
-    const formattedTwilioPhone = twilioPhone.replace(/[^\d]/g, '');
-    const twilioFromNumber = `+1${formattedTwilioPhone.replace(/^1/, '')}`;
-    
-    // Check if user accidentally entered the Twilio number
-    const userDigits = formattedPhone.replace(/[^\d]/g, '');
-    const twilioDigits = twilioFromNumber.replace(/[^\d]/g, '');
-    
-    if (userDigits === twilioDigits || userDigits.endsWith(twilioDigits) || twilioDigits.endsWith(userDigits)) {
-      console.error('User entered Twilio number as their phone');
-      return new Response(
-        JSON.stringify({ error: 'Please enter your personal phone number, not the Twilio number' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Store code in DB (so verify-code can validate reliably)
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    });
+
+    const { error: insertError } = await supabase.from("verification_codes").insert({
+      phone: formattedPhone,
+      code,
+      expires_at: expiresAtIso,
+      verified: false,
+    });
+
+    if (insertError) {
+      console.error("Failed to store verification code:", insertError);
+      return new Response(JSON.stringify({ error: "Failed to store verification code" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Send SMS via Twilio
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-    
+
     const formData = new URLSearchParams();
-    formData.append('To', formattedPhone);
-    formData.append('From', twilioFromNumber);
-    formData.append('Body', `Your verification code is: ${code}`);
+    formData.append("To", formattedPhone);
+    formData.append("From", twilioFromNumber);
+    formData.append("Body", `Your verification code is: ${code}`);
 
     const twilioResponse = await fetch(twilioUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: "Basic " + btoa(`${accountSid}:${authToken}`),
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: formData.toString(),
     });
 
     const twilioResult = await twilioResponse.json();
 
-    // Log full Twilio response for debugging
-    console.log('📱 Twilio API Response:', {
-      status: twilioResponse.status,
-      statusText: twilioResponse.statusText,
-      messageSid: twilioResult.sid,
-      status: twilioResult.status,
-      to: twilioResult.to,
-      from: twilioResult.from,
-      errorCode: twilioResult.code,
-      errorMessage: twilioResult.message,
-      price: twilioResult.price,
-      priceUnit: twilioResult.price_unit
+    console.log("📱 Twilio API Response:", {
+      ok: twilioResponse.ok,
+      status: twilioResult?.status,
+      sid: twilioResult?.sid,
+      error_code: twilioResult?.error_code,
+      error_message: twilioResult?.error_message,
+      to: twilioResult?.to,
+      from: twilioResult?.from,
     });
 
     if (!twilioResponse.ok) {
-      console.error('❌ Twilio API error:', {
-        status: twilioResponse.status,
-        statusText: twilioResponse.statusText,
-        error: twilioResult
-      });
-      
-      // Provide more helpful error messages
-      let errorMessage = 'Failed to send SMS';
-      if (twilioResult.message) {
-        errorMessage = twilioResult.message;
-      } else if (twilioResult.code === 21211) {
-        errorMessage = 'Invalid phone number format. Please include country code (e.g., +1 for US).';
-      } else if (twilioResult.code === 21608) {
-        errorMessage = 'Twilio phone number not verified. Please verify your Twilio number in Twilio console.';
-      } else if (twilioResult.code === 21408) {
-        errorMessage = 'Permission denied. Check your Twilio account permissions.';
-      } else if (twilioResult.code === 21610) {
-        errorMessage = 'Trial account: Phone number not verified. Verify your number at https://console.twilio.com/us1/develop/phone-numbers/manage/verified';
-      }
-      
+      console.error("Twilio error:", twilioResult);
       return new Response(
-        JSON.stringify({ 
-          error: errorMessage,
-          details: twilioResult.code ? `Error code: ${twilioResult.code}` : undefined
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: twilioResult?.message || "Failed to send SMS" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
-    // Check if message status indicates a problem
-    const messageStatus = twilioResult.status?.toLowerCase();
-    if (messageStatus && messageStatus !== 'queued' && messageStatus !== 'sent' && messageStatus !== 'delivered') {
-      console.warn('⚠️ Twilio message status may indicate an issue:', messageStatus);
-    }
+    console.log(`Verification code sent successfully to ${formattedPhone}`);
 
-    console.log(`✅ Verification code sent successfully to ${formattedPhone}`);
-    console.log(`📝 Code: ${code} (stored in database)`);
-    console.log(`📋 Message SID: ${twilioResult.sid}`);
-    console.log(`📊 Message Status: ${twilioResult.status}`);
+    // Only return the code in preview/dev origins (so you can keep testing even if SMS delivery fails)
+    const origin = req.headers.get("origin") ?? "";
+    const isPreviewOrigin =
+      origin.includes("lovableproject.com") || origin.includes("localhost");
 
-    // Return success with code for testing (remove in production)
-    // In production, you might want to remove the code from the response
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Verification code sent',
-        // Include code in response for testing - REMOVE IN PRODUCTION
-        code: code,
-        messageSid: twilioResult.sid,
-        messageStatus: twilioResult.status
+      JSON.stringify({
+        success: true,
+        message: "Verification code sent",
+        messageSid: twilioResult?.sid ?? null,
+        messageStatus: twilioResult?.status ?? null,
+        ...(isPreviewOrigin ? { code } : {}),
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-
   } catch (error: unknown) {
-    console.error('Error sending verification code:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error("Error sending verification code:", error);
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
