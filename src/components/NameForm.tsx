@@ -86,9 +86,25 @@ export function NameForm() {
       setStep(3);
     } catch (error: any) {
       console.error('Error sending code:', error);
+      console.error('Error details:', {
+        message: error.message,
+        error: error,
+        data: error.data
+      });
+      
+      // Extract error message from various possible formats
+      let errorMessage = "Please try again";
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.data?.error) {
+        errorMessage = error.data.error;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       toast({
         title: "Failed to send code",
-        description: error.message || "Please try again",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

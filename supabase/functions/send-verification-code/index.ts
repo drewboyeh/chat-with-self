@@ -56,8 +56,17 @@ serve(async (req) => {
 
     if (dbError) {
       console.error('Error storing verification code:', dbError);
+      // Check if table doesn't exist
+      if (dbError.message?.includes('relation') && dbError.message?.includes('does not exist')) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Database table not found. Please run the verification_codes migration in Supabase.' 
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       return new Response(
-        JSON.stringify({ error: 'Failed to store verification code' }),
+        JSON.stringify({ error: `Failed to store verification code: ${dbError.message}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -69,10 +78,23 @@ serve(async (req) => {
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const twilioPhone = Deno.env.get('TWILIO_PHONE_NUMBER');
 
+    console.log('Twilio credentials check:', {
+      hasAccountSid: !!accountSid,
+      hasAuthToken: !!authToken,
+      hasTwilioPhone: !!twilioPhone,
+      twilioPhone: twilioPhone ? `${twilioPhone.substring(0, 4)}****` : 'missing'
+    });
+
     if (!accountSid || !authToken || !twilioPhone) {
-      console.error('Missing Twilio credentials');
+      console.error('Missing Twilio credentials:', {
+        accountSid: accountSid ? 'present' : 'missing',
+        authToken: authToken ? 'present' : 'missing',
+        twilioPhone: twilioPhone ? 'present' : 'missing'
+      });
       return new Response(
-        JSON.stringify({ error: 'SMS service not configured' }),
+        JSON.stringify({ 
+          error: 'SMS service not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in Supabase Edge Functions secrets.' 
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -113,14 +135,35 @@ serve(async (req) => {
     const twilioResult = await twilioResponse.json();
 
     if (!twilioResponse.ok) {
-      console.error('Twilio error:', twilioResult);
+      console.error('Twilio API error:', {
+        status: twilioResponse.status,
+        statusText: twilioResponse.statusText,
+        error: twilioResult
+      });
+      
+      // Provide more helpful error messages
+      let errorMessage = 'Failed to send SMS';
+      if (twilioResult.message) {
+        errorMessage = twilioResult.message;
+      } else if (twilioResult.code === 21211) {
+        errorMessage = 'Invalid phone number format. Please include country code (e.g., +1 for US).';
+      } else if (twilioResult.code === 21608) {
+        errorMessage = 'Twilio phone number not verified. Please verify your Twilio number in Twilio console.';
+      } else if (twilioResult.code === 21408) {
+        errorMessage = 'Permission denied. Check your Twilio account permissions.';
+      }
+      
       return new Response(
-        JSON.stringify({ error: twilioResult.message || 'Failed to send SMS' }),
+        JSON.stringify({ 
+          error: errorMessage,
+          details: twilioResult.code ? `Error code: ${twilioResult.code}` : undefined
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Verification code sent successfully to ${formattedPhone}`);
+    console.log(`✅ Verification code sent successfully to ${formattedPhone}`);
+    console.log(`Code: ${code} (for debugging only)`);
 
     return new Response(
       JSON.stringify({ success: true, message: 'Verification code sent' }),
