@@ -79,9 +79,18 @@ export function NameForm() {
         throw new Error(data.error);
       }
 
+      // Log the code for debugging (remove in production)
+      if (data?.code) {
+        console.log('🔐 Verification code (for testing):', data.code);
+        console.log('📱 Message SID:', data.messageSid);
+        console.log('📊 Message Status:', data.messageStatus);
+      }
+
       toast({
         title: "Code sent!",
-        description: "Check your phone for the verification code",
+        description: data?.code 
+          ? `Check your phone. Code: ${data.code} (testing mode)` 
+          : "Check your phone for the verification code",
       });
       setStep(3);
     } catch (error: any) {

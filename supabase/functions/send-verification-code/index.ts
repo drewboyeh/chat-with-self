@@ -134,8 +134,22 @@ serve(async (req) => {
 
     const twilioResult = await twilioResponse.json();
 
+    // Log full Twilio response for debugging
+    console.log('📱 Twilio API Response:', {
+      status: twilioResponse.status,
+      statusText: twilioResponse.statusText,
+      messageSid: twilioResult.sid,
+      status: twilioResult.status,
+      to: twilioResult.to,
+      from: twilioResult.from,
+      errorCode: twilioResult.code,
+      errorMessage: twilioResult.message,
+      price: twilioResult.price,
+      priceUnit: twilioResult.price_unit
+    });
+
     if (!twilioResponse.ok) {
-      console.error('Twilio API error:', {
+      console.error('❌ Twilio API error:', {
         status: twilioResponse.status,
         statusText: twilioResponse.statusText,
         error: twilioResult
@@ -151,6 +165,8 @@ serve(async (req) => {
         errorMessage = 'Twilio phone number not verified. Please verify your Twilio number in Twilio console.';
       } else if (twilioResult.code === 21408) {
         errorMessage = 'Permission denied. Check your Twilio account permissions.';
+      } else if (twilioResult.code === 21610) {
+        errorMessage = 'Trial account: Phone number not verified. Verify your number at https://console.twilio.com/us1/develop/phone-numbers/manage/verified';
       }
       
       return new Response(
@@ -162,11 +178,28 @@ serve(async (req) => {
       );
     }
 
-    console.log(`✅ Verification code sent successfully to ${formattedPhone}`);
-    console.log(`Code: ${code} (for debugging only)`);
+    // Check if message status indicates a problem
+    const messageStatus = twilioResult.status?.toLowerCase();
+    if (messageStatus && messageStatus !== 'queued' && messageStatus !== 'sent' && messageStatus !== 'delivered') {
+      console.warn('⚠️ Twilio message status may indicate an issue:', messageStatus);
+    }
 
+    console.log(`✅ Verification code sent successfully to ${formattedPhone}`);
+    console.log(`📝 Code: ${code} (stored in database)`);
+    console.log(`📋 Message SID: ${twilioResult.sid}`);
+    console.log(`📊 Message Status: ${twilioResult.status}`);
+
+    // Return success with code for testing (remove in production)
+    // In production, you might want to remove the code from the response
     return new Response(
-      JSON.stringify({ success: true, message: 'Verification code sent' }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Verification code sent',
+        // Include code in response for testing - REMOVE IN PRODUCTION
+        code: code,
+        messageSid: twilioResult.sid,
+        messageStatus: twilioResult.status
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
