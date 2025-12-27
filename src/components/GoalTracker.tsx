@@ -18,6 +18,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoals, Goal } from "@/hooks/useGoals";
+import { useRewards } from "@/hooks/useRewards";
+import { CelebrationDialog } from "./CelebrationDialog";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus,
@@ -124,6 +127,10 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
   const { activeGoals, completedGoals, createGoal, updateGoalProgress, deleteGoal } =
     useGoals();
   const { toast } = useToast();
+  const { awardPoints, incrementGoal } = useRewards();
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationPoints, setCelebrationPoints] = useState(0);
+  const [newAchievements, setNewAchievements] = useState<any[]>([]);
 
   const handleCreateGoal = async () => {
     if (!newGoal.title.trim()) return;
@@ -156,10 +163,36 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
   const handleUpdateProgress = async (goalId: string, progress: number) => {
     const success = await updateGoalProgress(goalId, progress);
     if (success && progress >= 100) {
-      toast({
-        title: "🎉 Goal completed!",
-        description: "Amazing work! Time to set a new goal.",
-      });
+      // Award points for completing goal
+      const pointsAwarded = 50; // Base points for completing a goal
+      const goal = activeGoals.find((g) => g.id === goalId);
+      
+      const result = await awardPoints(
+        pointsAwarded,
+        "goal_completed",
+        goalId,
+        `Completed goal: ${goal?.title || "Goal"}`
+      );
+
+      // Increment goal count and check for achievements
+      const achievements = await incrementGoal();
+
+      // Show celebration
+      if (result.success || achievements.length > 0) {
+        if (achievements.length > 0) {
+          setNewAchievements(achievements);
+          setCelebrationPoints(pointsAwarded);
+          setShowCelebration(true);
+        } else {
+          setCelebrationPoints(pointsAwarded);
+          setShowCelebration(true);
+        }
+      } else {
+        toast({
+          title: "🎉 Goal completed!",
+          description: `You earned ${pointsAwarded} points!`,
+        });
+      }
     }
   };
 
@@ -174,7 +207,8 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl flex items-center gap-2">
@@ -336,5 +370,30 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
         </Tabs>
       </DialogContent>
     </Dialog>
+
+    <CelebrationDialog
+      open={showCelebration}
+      onClose={() => {
+        setShowCelebration(false);
+        setNewAchievements([]);
+      }}
+      type={newAchievements.length > 0 ? "achievement" : "goal"}
+      points={celebrationPoints}
+      achievement={
+        newAchievements.length > 0
+          ? {
+              name: newAchievements[0].name,
+              description: newAchievements[0].description,
+              icon: newAchievements[0].icon,
+            }
+          : undefined
+      }
+      message={
+        newAchievements.length > 0
+          ? `You unlocked: ${newAchievements[0].name}!`
+          : "Amazing work! Time to set a new goal."
+      }
+    />
+    </>
   );
 }
