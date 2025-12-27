@@ -97,24 +97,9 @@ export function NameForm() {
         throw new Error(data.error);
       }
 
-      // Log the code for debugging (remove in production)
-      if (data?.code) {
-        console.log('═══════════════════════════════════════');
-        console.log('🔐 VERIFICATION CODE:', data.code);
-        console.log('📱 Message SID:', data.messageSid);
-        console.log('📊 Message Status:', data.messageStatus);
-        console.log('═══════════════════════════════════════');
-      } else {
-        console.warn('⚠️ No code in response:', data);
-      }
-
       toast({
-        title: data?.emailSent ? "Code sent!" : "Code generated!",
-        description: data?.emailSent 
-          ? `Check your email (${email.trim()}) for the verification code`
-          : data?.code 
-          ? `Check your email or use code: ${data.code}`
-          : "Check your email for the verification code",
+        title: "Code sent!",
+        description: `Check your email (${email.trim()}) for the verification code`,
       });
       setStep(3);
     } catch (error: any) {
@@ -197,16 +182,9 @@ export function NameForm() {
         throw new Error(data.error);
       }
 
-      // Temporary testing aid: if backend returns code (preview only), log it
-      if (data?.code) {
-        console.log('🔐 Verification code (for testing):', data.code);
-        console.log('📱 Message SID:', data.messageSid);
-        console.log('📊 Message Status:', data.messageStatus);
-      }
-
       toast({
         title: "Code resent!",
-        description: "Check your phone for the new verification code",
+        description: "Check your email for the new verification code",
       });
       setVerificationCode("");
     } catch (error: any) {

@@ -79,20 +79,16 @@ serve(async (req) => {
       
       // Alternative: Use Resend, SendGrid, or similar
       // For now, return code in response for testing
-      console.log(`📧 Verification code for ${email}: ${code}`);
+      // Note: In production, this should send via a real email service like Resend
+      console.log(`📧 Verification code generated for ${email}`);
     }
 
-    console.log(`✅ Verification code generated: ${code}`);
-    console.log(`📝 Identifier: ${identifier}`);
+    console.log(`✅ Verification code generated for: ${identifier}`);
 
-    // Return code in response (for email, user can see it)
-    // In production, you'd send via email service
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: email ? 'Verification code sent to email' : 'Verification code generated',
-        code: code, // Include for email verification
-        identifier: identifier
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
