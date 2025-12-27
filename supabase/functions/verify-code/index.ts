@@ -7,12 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function formatUsPhoneToE164(input: string): string {
-  const clean = input.replace(/[^\d+]/g, "").trim();
-  if (clean.startsWith("+")) return clean;
-  const digits = clean.replace(/\D/g, "");
-  return `+1${digits}`;
-}
+// Removed phone formatting function - now using email
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -21,19 +16,19 @@ serve(async (req) => {
   }
 
   try {
-    const { phone, code } = await req.json();
+    const { email, code } = await req.json();
 
-    if (!phone || !code) {
-      return new Response(JSON.stringify({ error: "Phone number and code are required" }), {
+    if (!email || !code) {
+      return new Response(JSON.stringify({ error: "Email address and code are required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const formattedPhone = formatUsPhoneToE164(String(phone));
+    const normalizedEmail = String(email).trim().toLowerCase();
     const enteredCode = String(code).trim();
 
-    console.log(`Verifying code for ${formattedPhone}`);
+    console.log(`Verifying code for ${normalizedEmail}`);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -53,7 +48,7 @@ serve(async (req) => {
     const { data: rows, error: selectError } = await supabase
       .from("verification_codes")
       .select("id, code, expires_at, verified, created_at")
-      .eq("phone", formattedPhone)
+      .eq("phone", normalizedEmail) // Using 'phone' column to store email for compatibility
       .order("created_at", { ascending: false })
       .limit(1);
 
@@ -108,7 +103,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Phone ${formattedPhone} verified successfully`);
+    console.log(`Email ${normalizedEmail} verified successfully`);
 
     return new Response(JSON.stringify({ success: true, verified: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

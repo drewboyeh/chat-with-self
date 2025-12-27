@@ -8,7 +8,7 @@ interface AuthContextType {
   loading: boolean;
   userName: string | null;
   therapistStyle: string | null;
-  signInAnonymously: (name: string, phone: string, therapistStyle: string) => Promise<{ error: Error | null }>;
+  signInAnonymously: (name: string, email: string, therapistStyle: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -55,12 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInAnonymously = async (name: string, phone: string, therapistStyle: string) => {
+  const signInAnonymously = async (name: string, email: string, therapistStyle: string) => {
     const { data, error } = await supabase.auth.signInAnonymously({
       options: {
         data: {
           name,
-          phone,
+          email,
           therapist_style: therapistStyle,
         },
       },

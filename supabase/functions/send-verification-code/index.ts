@@ -7,23 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function formatUsPhoneToE164(input: string): string {
-  const clean = input.replace(/[^\d+]/g, "").trim();
-  if (clean.startsWith("+")) return clean;
-  // Default to US +1 for 10-digit inputs
-  const digits = clean.replace(/\D/g, "");
-  return `+1${digits}`;
-}
-
-function formatTwilioFromNumber(input: string): string {
-  const trimmed = input.trim();
-  if (trimmed.startsWith("+")) return trimmed;
-  const digits = trimmed.replace(/\D/g, "");
-  // Assume US if no + provided
-  const withoutLeading1 = digits.replace(/^1/, "");
-  return `+1${withoutLeading1}`;
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -31,22 +14,31 @@ serve(async (req) => {
   }
 
   try {
-    const { phone } = await req.json();
+    const { email } = await req.json();
 
-    if (!phone) {
-      return new Response(JSON.stringify({ error: "Phone number is required" }), {
+    if (!email) {
+      return new Response(JSON.stringify({ error: "Email address is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const formattedPhone = formatUsPhoneToE164(String(phone));
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return new Response(JSON.stringify({ error: "Please enter a valid email address" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
 
     // Generate 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAtIso = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    console.log(`📱 Verification code generated for ${formattedPhone}`);
+    console.log(`📧 Verification code generated for ${normalizedEmail}`);
 
     // Backend credentials
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -60,16 +52,16 @@ serve(async (req) => {
       });
     }
 
-    // Store code in DB (so verify-code can validate reliably)
+    // Store code in DB (using email as identifier in the 'phone' column for compatibility)
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
 
-    // Clean up old codes for this phone number
-    await supabase.from("verification_codes").delete().eq("phone", formattedPhone);
+    // Clean up old codes for this email
+    await supabase.from("verification_codes").delete().eq("phone", normalizedEmail);
 
     const { error: insertError } = await supabase.from("verification_codes").insert({
-      phone: formattedPhone,
+      phone: normalizedEmail, // Using 'phone' column to store email for compatibility
       code,
       expires_at: expiresAtIso,
       verified: false,
@@ -83,96 +75,75 @@ serve(async (req) => {
       });
     }
 
-    // Try to send SMS via Twilio (optional - if not configured, code will be shown in UI)
-    const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const twilioPhone = Deno.env.get("TWILIO_PHONE_NUMBER");
+    // Send email via Resend
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    let emailSent = false;
+    let emailId = null;
 
-    let smsSent = false;
-    let messageSid = null;
-    let messageStatus = null;
-
-    if (accountSid && authToken && twilioPhone) {
-      const twilioFromNumber = formatTwilioFromNumber(twilioPhone);
-
-      // Basic sanity check: user didn't enter the Twilio number
-      const userDigits = formattedPhone.replace(/[^\d]/g, "");
-      const twilioDigits = twilioFromNumber.replace(/[^\d]/g, "");
-      if (
-        userDigits === twilioDigits ||
-        userDigits.endsWith(twilioDigits) ||
-        twilioDigits.endsWith(userDigits)
-      ) {
-        console.error("User entered Twilio number as their phone");
-        return new Response(
-          JSON.stringify({
-            error: "Please enter your personal phone number, not the SMS sender number",
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      // Send SMS via Twilio
-      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-
-      const formData = new URLSearchParams();
-      formData.append("To", formattedPhone);
-      formData.append("From", twilioFromNumber);
-      formData.append("Body", `Your verification code is: ${code}`);
-
+    if (resendApiKey) {
       try {
-        const twilioResponse = await fetch(twilioUrl, {
+        const resendResponse = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
-            Authorization: "Basic " + btoa(`${accountSid}:${authToken}`),
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
           },
-          body: formData.toString(),
+          body: JSON.stringify({
+            from: "onboarding@resend.dev", // Default Resend domain for testing
+            to: normalizedEmail,
+            subject: "Your Verification Code",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #333;">Your Verification Code</h2>
+                <p style="color: #666; font-size: 16px;">Your verification code is:</p>
+                <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+                  <h1 style="color: #000; font-size: 32px; letter-spacing: 4px; margin: 0;">${code}</h1>
+                </div>
+                <p style="color: #666; font-size: 14px;">This code will expire in 10 minutes.</p>
+                <p style="color: #999; font-size: 12px; margin-top: 30px;">If you didn't request this code, please ignore this email.</p>
+              </div>
+            `,
+            text: `Your verification code is: ${code}\n\nThis code will expire in 10 minutes.`,
+          }),
         });
 
-        const twilioResult = await twilioResponse.json();
+        const resendResult = await resendResponse.json();
 
-        console.log("📱 Twilio API Response:", {
-          ok: twilioResponse.ok,
-          status: twilioResult?.status,
-          sid: twilioResult?.sid,
-          error_code: twilioResult?.error_code,
-          error_message: twilioResult?.error_message,
-          to: twilioResult?.to,
-          from: twilioResult?.from,
+        console.log("📧 Resend API Response:", {
+          ok: resendResponse.ok,
+          id: resendResult?.id,
+          error: resendResult?.error,
         });
 
-        if (twilioResponse.ok) {
-          smsSent = true;
-          messageSid = twilioResult?.sid ?? null;
-          messageStatus = twilioResult?.status ?? null;
-          console.log(`✅ SMS sent via Twilio to ${formattedPhone}`);
+        if (resendResponse.ok && resendResult.id) {
+          emailSent = true;
+          emailId = resendResult.id;
+          console.log(`✅ Email sent via Resend to ${normalizedEmail}`);
         } else {
-          console.warn("⚠️ Twilio SMS failed, code will be shown in UI instead");
+          console.warn("⚠️ Resend email failed:", resendResult?.error || "Unknown error");
+          // Still return success with code so user can verify
         }
       } catch (error) {
-        console.warn("⚠️ Twilio error, code will be shown in UI instead:", error);
+        console.warn("⚠️ Resend error, code will be shown in UI:", error);
+        // Still return success with code so user can verify
       }
     } else {
-      console.log("ℹ️ No Twilio credentials configured - code will be shown in UI");
+      console.log("ℹ️ No Resend API key configured - code will be shown in UI");
     }
 
     console.log(`✅ Verification code generated: ${code}`);
 
-    // Always return the code in response (user will see it in UI/toast)
-    // This works immediately without any SMS provider
+    // Always return the code in response (user can see it if email fails)
     return new Response(
       JSON.stringify({
         success: true,
-        message: smsSent ? "Verification code sent via SMS" : "Verification code generated",
-        code: code, // Always include code so user can see it
-        phone: formattedPhone,
-        messageSid: messageSid,
-        messageStatus: messageStatus,
-        smsSent: smsSent,
+        message: emailSent 
+          ? "Verification code sent to your email" 
+          : "Verification code generated (check your email or use code below)",
+        code: code, // Include code so user can see it if email doesn't arrive
+        email: normalizedEmail,
+        emailSent: emailSent,
+        emailId: emailId,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

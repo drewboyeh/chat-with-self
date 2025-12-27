@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, ArrowRight, Phone, Users, ArrowLeft, ShieldCheck } from "lucide-react";
+import { Sparkles, Loader2, ArrowRight, Mail, Users, ArrowLeft, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   InputOTP,
@@ -46,8 +46,8 @@ const therapistStyles = [
 ];
 
 export function NameForm() {
-  const [step, setStep] = useState(1); // 1 = welcome, 2 = phone, 3 = verify, 4 = style, 5 = name
-  const [phone, setPhone] = useState("");
+  const [step, setStep] = useState(1); // 1 = welcome, 2 = email, 3 = verify, 4 = style, 5 = name
+  const [email, setEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [selectedStyle, setSelectedStyle] = useState("");
   const [name, setName] = useState("");
@@ -61,17 +61,28 @@ export function NameForm() {
     setStep(2);
   };
 
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone.trim()) return;
+    if (!email.trim()) return;
 
-    console.log('📞 Starting phone verification for:', phone.trim());
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('📧 Starting email verification for:', email.trim());
     setSendingCode(true);
     
     try {
       console.log('📡 Calling send-verification-code function...');
       const { data, error } = await supabase.functions.invoke('send-verification-code', {
-        body: { phone: phone.trim() }
+        body: { email: email.trim() }
       });
 
       console.log('📥 Response received:', { data, error });
@@ -98,10 +109,12 @@ export function NameForm() {
       }
 
       toast({
-        title: "Code sent!",
-        description: data?.code 
-          ? `Check your phone. Code: ${data.code} (testing mode)` 
-          : "Check your phone for the verification code",
+        title: data?.emailSent ? "Code sent!" : "Code generated!",
+        description: data?.emailSent 
+          ? `Check your email (${email.trim()}) for the verification code`
+          : data?.code 
+          ? `Check your email or use code: ${data.code}`
+          : "Check your email for the verification code",
       });
       setStep(3);
     } catch (error: any) {
@@ -130,7 +143,7 @@ export function NameForm() {
       });
     } finally {
       setSendingCode(false);
-      console.log('✅ Phone submit handler finished');
+      console.log('✅ Email submit handler finished');
     }
   };
 
@@ -141,7 +154,7 @@ export function NameForm() {
     setVerifying(true);
     try {
       const { data, error } = await supabase.functions.invoke('verify-code', {
-        body: { phone: phone.trim(), code: verificationCode }
+        body: { email: email.trim(), code: verificationCode }
       });
 
       if (error) {
@@ -153,8 +166,8 @@ export function NameForm() {
       }
 
       toast({
-        title: "Phone verified!",
-        description: "Your phone number has been verified",
+        title: "Email verified!",
+        description: "Your email address has been verified",
       });
       setStep(4);
     } catch (error: any) {
@@ -173,7 +186,7 @@ export function NameForm() {
     setSendingCode(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-verification-code', {
-        body: { phone: phone.trim() }
+        body: { email: email.trim() }
       });
 
       if (error) {
@@ -218,7 +231,7 @@ export function NameForm() {
 
     setLoading(true);
 
-    const { error } = await signInAnonymously(name.trim(), phone.trim(), selectedStyle);
+    const { error } = await signInAnonymously(name.trim(), email.trim(), selectedStyle);
 
     if (error) {
       toast({
@@ -287,17 +300,17 @@ export function NameForm() {
     );
   }
 
-  // Step 2: Phone
+  // Step 2: Email
   if (step === 2) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 bg-background">
         <div className="w-full max-w-md animate-fade-in">
           <div className="text-center mb-10">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6">
-              <Phone className="w-8 h-8 text-primary" />
+              <Mail className="w-8 h-8 text-primary" />
             </div>
             <h1 className="text-3xl font-serif font-medium text-foreground mb-3">
-              Your Phone Number
+              Your Email Address
             </h1>
             <p className="text-muted-foreground">
               We'll send you a verification code
@@ -305,23 +318,23 @@ export function NameForm() {
           </div>
 
           <div className="bg-card rounded-2xl p-8 shadow-soft border border-border">
-            <form onSubmit={handlePhoneSubmit} className="space-y-6">
+            <form onSubmit={handleEmailSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium">
-                  Phone number
+                <Label htmlFor="email" className="text-sm font-medium">
+                  Email address
                 </Label>
                 <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="(555) 123-4567"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   autoFocus
                   className="h-12 rounded-xl bg-background border-border focus:border-primary focus:ring-primary/20 text-lg"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Your number is kept private and secure
+                  Your email is kept private and secure
                 </p>
               </div>
 
@@ -336,7 +349,7 @@ export function NameForm() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!phone.trim() || sendingCode}
+                  disabled={!email.trim() || sendingCode}
                   className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-warm transition-all duration-200"
                 >
                   {sendingCode ? (
@@ -371,7 +384,7 @@ export function NameForm() {
               Enter Verification Code
             </h1>
             <p className="text-muted-foreground">
-              We sent a 6-digit code to {phone}
+              We sent a 6-digit code to {email}
             </p>
           </div>
 
