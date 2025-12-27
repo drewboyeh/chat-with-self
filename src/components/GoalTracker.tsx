@@ -17,10 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 import { useGoals, Goal } from "@/hooks/useGoals";
 import { useRewards } from "@/hooks/useRewards";
 import { CelebrationDialog } from "./CelebrationDialog";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus,
