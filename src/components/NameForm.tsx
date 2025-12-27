@@ -65,25 +65,36 @@ export function NameForm() {
     e.preventDefault();
     if (!phone.trim()) return;
 
+    console.log('📞 Starting phone verification for:', phone.trim());
     setSendingCode(true);
+    
     try {
+      console.log('📡 Calling send-verification-code function...');
       const { data, error } = await supabase.functions.invoke('send-verification-code', {
         body: { phone: phone.trim() }
       });
 
+      console.log('📥 Response received:', { data, error });
+
       if (error) {
+        console.error('❌ Supabase function error:', error);
         throw error;
       }
 
       if (data?.error) {
+        console.error('❌ Error in response data:', data.error);
         throw new Error(data.error);
       }
 
       // Log the code for debugging (remove in production)
       if (data?.code) {
-        console.log('🔐 Verification code (for testing):', data.code);
+        console.log('═══════════════════════════════════════');
+        console.log('🔐 VERIFICATION CODE:', data.code);
         console.log('📱 Message SID:', data.messageSid);
         console.log('📊 Message Status:', data.messageStatus);
+        console.log('═══════════════════════════════════════');
+      } else {
+        console.warn('⚠️ No code in response:', data);
       }
 
       toast({
@@ -94,12 +105,13 @@ export function NameForm() {
       });
       setStep(3);
     } catch (error: any) {
-      console.error('Error sending code:', error);
-      console.error('Error details:', {
-        message: error.message,
-        error: error,
-        data: error.data
-      });
+      console.error('═══════════════════════════════════════');
+      console.error('❌ ERROR SENDING CODE:');
+      console.error('Error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error data:', error.data);
+      console.error('Full error:', JSON.stringify(error, null, 2));
+      console.error('═══════════════════════════════════════');
       
       // Extract error message from various possible formats
       let errorMessage = "Please try again";
@@ -118,6 +130,7 @@ export function NameForm() {
       });
     } finally {
       setSendingCode(false);
+      console.log('✅ Phone submit handler finished');
     }
   };
 
