@@ -38,7 +38,7 @@ serve(async (req) => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAtIso = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    console.log(`📧 Verification code generated for ${normalizedEmail}: ${code}`);
+    console.log(`📧 Verification code generated for ${normalizedEmail}`);
 
     // Backend credentials
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -80,16 +80,11 @@ serve(async (req) => {
     
     if (!resendApiKey) {
       console.error("RESEND_API_KEY not configured");
-      // Return the code anyway for testing purposes
       return new Response(
         JSON.stringify({
-          success: true,
-          message: "Verification code generated (email not configured)",
-          code: code,
-          email: normalizedEmail,
-          emailSent: false,
+          error: "Email service not configured. Please contact support.",
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -150,32 +145,20 @@ serve(async (req) => {
         );
       } else {
         console.error("❌ Resend API error:", resendResult);
-        // Still return success with code for testing
         return new Response(
           JSON.stringify({
-            success: true,
-            message: "Verification code generated (email delivery issue)",
-            code: code,
-            email: normalizedEmail,
-            emailSent: false,
-            emailError: resendResult.message || resendResult.error || "Unknown error",
+            error: "Failed to send verification email. Please try again.",
           }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
     } catch (emailError: unknown) {
       console.error("❌ Error sending email:", emailError);
-      // Still return success with code for testing
       return new Response(
         JSON.stringify({
-          success: true,
-          message: "Verification code generated (email error)",
-          code: code,
-          email: normalizedEmail,
-          emailSent: false,
-          emailError: emailError instanceof Error ? emailError.message : "Unknown error",
+          error: "Failed to send verification email. Please try again.",
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
   } catch (error: unknown) {
