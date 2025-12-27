@@ -38,7 +38,7 @@ serve(async (req) => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAtIso = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    console.log(`📧 Verification code generated for ${normalizedEmail}`);
+    console.log(`📧 Verification code generated for ${normalizedEmail}: ${code}`);
 
     // Backend credentials
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -52,7 +52,7 @@ serve(async (req) => {
       });
     }
 
-    // Store code in DB (using email as identifier in the 'phone' column for compatibility)
+    // Store code in DB (using 'phone' column to store email for compatibility)
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
@@ -61,7 +61,7 @@ serve(async (req) => {
     await supabase.from("verification_codes").delete().eq("phone", normalizedEmail);
 
     const { error: insertError } = await supabase.from("verification_codes").insert({
-      phone: normalizedEmail, // Using 'phone' column to store email for compatibility
+      phone: normalizedEmail,
       code,
       expires_at: expiresAtIso,
       verified: false,
@@ -77,78 +77,109 @@ serve(async (req) => {
 
     // Send email via Resend
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    let emailSent = false;
-    let emailId = null;
-
-    if (resendApiKey) {
-      try {
-        const resendResponse = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: "onboarding@resend.dev", // Default Resend domain for testing
-            to: normalizedEmail,
-            subject: "Your Verification Code",
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #333;">Your Verification Code</h2>
-                <p style="color: #666; font-size: 16px;">Your verification code is:</p>
-                <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-                  <h1 style="color: #000; font-size: 32px; letter-spacing: 4px; margin: 0;">${code}</h1>
-                </div>
-                <p style="color: #666; font-size: 14px;">This code will expire in 10 minutes.</p>
-                <p style="color: #999; font-size: 12px; margin-top: 30px;">If you didn't request this code, please ignore this email.</p>
-              </div>
-            `,
-            text: `Your verification code is: ${code}\n\nThis code will expire in 10 minutes.`,
-          }),
-        });
-
-        const resendResult = await resendResponse.json();
-
-        console.log("📧 Resend API Response:", {
-          ok: resendResponse.ok,
-          id: resendResult?.id,
-          error: resendResult?.error,
-        });
-
-        if (resendResponse.ok && resendResult.id) {
-          emailSent = true;
-          emailId = resendResult.id;
-          console.log(`✅ Email sent via Resend to ${normalizedEmail}`);
-        } else {
-          console.warn("⚠️ Resend email failed:", resendResult?.error || "Unknown error");
-          // Still return success with code so user can verify
-        }
-      } catch (error) {
-        console.warn("⚠️ Resend error, code will be shown in UI:", error);
-        // Still return success with code so user can verify
-      }
-    } else {
-      console.log("ℹ️ No Resend API key configured - code will be shown in UI");
+    
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY not configured");
+      // Return the code anyway for testing purposes
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Verification code generated (email not configured)",
+          code: code,
+          email: normalizedEmail,
+          emailSent: false,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    console.log(`✅ Verification code generated: ${code}`);
+    try {
+      console.log("📧 Sending email via Resend to:", normalizedEmail);
+      
+      const resendResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "onboarding@resend.dev",
+          to: normalizedEmail,
+          subject: "Your Verification Code",
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+              <div style="text-align: center; margin-bottom: 40px;">
+                <h1 style="color: #1a1a1a; font-size: 28px; font-weight: 600; margin: 0;">Your Verification Code</h1>
+              </div>
+              <div style="background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%); padding: 30px; text-align: center; margin: 30px 0; border-radius: 16px;">
+                <p style="color: #666; font-size: 14px; margin: 0 0 12px 0;">Enter this code to verify your email:</p>
+                <h2 style="color: #1a1a1a; font-size: 42px; letter-spacing: 8px; margin: 0; font-weight: 700;">${code}</h2>
+              </div>
+              <p style="color: #888; font-size: 14px; text-align: center; margin: 24px 0;">
+                This code will expire in 10 minutes.
+              </p>
+              <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 40px;">
+                If you didn't request this code, you can safely ignore this email.
+              </p>
+            </div>
+          `,
+          text: `Your verification code is: ${code}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.`,
+        }),
+      });
 
-    // Always return the code in response (user can see it if email fails)
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: emailSent 
-          ? "Verification code sent to your email" 
-          : "Verification code generated (check your email or use code below)",
-        code: code, // Include code so user can see it if email doesn't arrive
-        email: normalizedEmail,
-        emailSent: emailSent,
-        emailId: emailId,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+      const resendResult = await resendResponse.json();
+
+      console.log("📧 Resend API Response:", {
+        status: resendResponse.status,
+        ok: resendResponse.ok,
+        result: resendResult,
+      });
+
+      if (resendResponse.ok && resendResult.id) {
+        console.log(`✅ Email sent successfully to ${normalizedEmail}, ID: ${resendResult.id}`);
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Verification code sent to your email",
+            email: normalizedEmail,
+            emailSent: true,
+            emailId: resendResult.id,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      } else {
+        console.error("❌ Resend API error:", resendResult);
+        // Still return success with code for testing
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Verification code generated (email delivery issue)",
+            code: code,
+            email: normalizedEmail,
+            emailSent: false,
+            emailError: resendResult.message || resendResult.error || "Unknown error",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    } catch (emailError: unknown) {
+      console.error("❌ Error sending email:", emailError);
+      // Still return success with code for testing
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Verification code generated (email error)",
+          code: code,
+          email: normalizedEmail,
+          emailSent: false,
+          emailError: emailError instanceof Error ? emailError.message : "Unknown error",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
   } catch (error: unknown) {
-    console.error("Error sending verification code:", error);
+    console.error("Error in send-verification-code:", error);
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,

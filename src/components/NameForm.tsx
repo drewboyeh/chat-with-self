@@ -206,7 +206,7 @@ export function NameForm() {
 
       toast({
         title: "Code resent!",
-        description: "Check your phone for the new verification code",
+        description: "Check your email for the new verification code",
       });
       setVerificationCode("");
     } catch (error: any) {
