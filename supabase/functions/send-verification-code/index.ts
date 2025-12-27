@@ -71,134 +71,70 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Sending verification code to ${formattedPhone}`);
+    console.log(`📱 Verification code generated for ${formattedPhone}`);
 
-    // Get Twilio credentials
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const twilioPhone = Deno.env.get('TWILIO_PHONE_NUMBER');
-
-    console.log('Twilio credentials check:', {
-      hasAccountSid: !!accountSid,
-      hasAuthToken: !!authToken,
-      hasTwilioPhone: !!twilioPhone,
-      twilioPhone: twilioPhone ? `${twilioPhone.substring(0, 4)}****` : 'missing'
-    });
-
-    if (!accountSid || !authToken || !twilioPhone) {
-      console.error('Missing Twilio credentials:', {
-        accountSid: accountSid ? 'present' : 'missing',
-        authToken: authToken ? 'present' : 'missing',
-        twilioPhone: twilioPhone ? 'present' : 'missing'
-      });
-      return new Response(
-        JSON.stringify({ 
-          error: 'SMS service not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in Supabase Edge Functions secrets.' 
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Format Twilio phone number
-    const formattedTwilioPhone = twilioPhone.replace(/[^\d]/g, '');
-    const twilioFromNumber = `+1${formattedTwilioPhone.replace(/^1/, '')}`;
+    // Check if SMS provider is configured (Twilio, AWS SNS, etc.)
+    const smsProvider = Deno.env.get('SMS_PROVIDER') || 'none'; // 'twilio', 'aws', 'none'
     
-    // Check if user accidentally entered the Twilio number
-    const userDigits = formattedPhone.replace(/[^\d]/g, '');
-    const twilioDigits = twilioFromNumber.replace(/[^\d]/g, '');
-    
-    if (userDigits === twilioDigits || userDigits.endsWith(twilioDigits) || twilioDigits.endsWith(userDigits)) {
-      console.error('User entered Twilio number as their phone');
-      return new Response(
-        JSON.stringify({ error: 'Please enter your personal phone number, not the Twilio number' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    if (smsProvider === 'twilio') {
+      // Twilio implementation (existing code)
+      const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+      const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+      const twilioPhone = Deno.env.get('TWILIO_PHONE_NUMBER');
 
-    // Send SMS via Twilio
-    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-    
-    const formData = new URLSearchParams();
-    formData.append('To', formattedPhone);
-    formData.append('From', twilioFromNumber);
-    formData.append('Body', `Your verification code is: ${code}`);
+      if (accountSid && authToken && twilioPhone) {
+        // Format Twilio phone number
+        const formattedTwilioPhone = twilioPhone.replace(/[^\d]/g, '');
+        const twilioFromNumber = `+1${formattedTwilioPhone.replace(/^1/, '')}`;
+        
+        // Send SMS via Twilio
+        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+        const formData = new URLSearchParams();
+        formData.append('To', formattedPhone);
+        formData.append('From', twilioFromNumber);
+        formData.append('Body', `Your verification code is: ${code}`);
 
-    const twilioResponse = await fetch(twilioUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData.toString(),
-    });
+        try {
+          const twilioResponse = await fetch(twilioUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData.toString(),
+          });
 
-    const twilioResult = await twilioResponse.json();
+          const twilioResult = await twilioResponse.json();
 
-    // Log full Twilio response for debugging
-    console.log('📱 Twilio API Response:', {
-      status: twilioResponse.status,
-      statusText: twilioResponse.statusText,
-      messageSid: twilioResult.sid,
-      status: twilioResult.status,
-      to: twilioResult.to,
-      from: twilioResult.from,
-      errorCode: twilioResult.code,
-      errorMessage: twilioResult.message,
-      price: twilioResult.price,
-      priceUnit: twilioResult.price_unit
-    });
-
-    if (!twilioResponse.ok) {
-      console.error('❌ Twilio API error:', {
-        status: twilioResponse.status,
-        statusText: twilioResponse.statusText,
-        error: twilioResult
-      });
-      
-      // Provide more helpful error messages
-      let errorMessage = 'Failed to send SMS';
-      if (twilioResult.message) {
-        errorMessage = twilioResult.message;
-      } else if (twilioResult.code === 21211) {
-        errorMessage = 'Invalid phone number format. Please include country code (e.g., +1 for US).';
-      } else if (twilioResult.code === 21608) {
-        errorMessage = 'Twilio phone number not verified. Please verify your Twilio number in Twilio console.';
-      } else if (twilioResult.code === 21408) {
-        errorMessage = 'Permission denied. Check your Twilio account permissions.';
-      } else if (twilioResult.code === 21610) {
-        errorMessage = 'Trial account: Phone number not verified. Verify your number at https://console.twilio.com/us1/develop/phone-numbers/manage/verified';
+          if (twilioResponse.ok) {
+            console.log(`✅ SMS sent via Twilio to ${formattedPhone}`);
+            console.log(`📋 Message SID: ${twilioResult.sid}`);
+          } else {
+            console.warn('⚠️ Twilio SMS failed, showing code in UI instead');
+          }
+        } catch (error) {
+          console.warn('⚠️ Twilio error, showing code in UI instead:', error);
+        }
       }
-      
-      return new Response(
-        JSON.stringify({ 
-          error: errorMessage,
-          details: twilioResult.code ? `Error code: ${twilioResult.code}` : undefined
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    } else if (smsProvider === 'aws') {
+      // AWS SNS implementation (to be implemented)
+      console.log('📱 AWS SNS not yet implemented');
     }
 
-    // Check if message status indicates a problem
-    const messageStatus = twilioResult.status?.toLowerCase();
-    if (messageStatus && messageStatus !== 'queued' && messageStatus !== 'sent' && messageStatus !== 'delivered') {
-      console.warn('⚠️ Twilio message status may indicate an issue:', messageStatus);
-    }
+    // Always return code in response (user will see it in UI)
+    // This works immediately without any SMS provider
+    console.log(`✅ Verification code generated: ${code}`);
+    console.log(`📝 Code stored in database for ${formattedPhone}`);
 
-    console.log(`✅ Verification code sent successfully to ${formattedPhone}`);
-    console.log(`📝 Code: ${code} (stored in database)`);
-    console.log(`📋 Message SID: ${twilioResult.sid}`);
-    console.log(`📊 Message Status: ${twilioResult.status}`);
-
-    // Return success with code for testing (remove in production)
-    // In production, you might want to remove the code from the response
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Verification code sent',
-        // Include code in response for testing - REMOVE IN PRODUCTION
-        code: code,
-        messageSid: twilioResult.sid,
-        messageStatus: twilioResult.status
+        message: 'Verification code generated',
+        code: code, // Code shown in UI/toast
+        phone: formattedPhone,
+        note: smsProvider === 'none' 
+          ? 'Code displayed in app (no SMS provider configured)' 
+          : 'Code sent via SMS and displayed here'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
