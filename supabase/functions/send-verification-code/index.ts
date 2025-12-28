@@ -7,6 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limit: max 3 requests per email per hour
+const RATE_LIMIT_MAX_REQUESTS = 3;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -34,12 +38,6 @@ serve(async (req) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAtIso = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-    console.log(`📧 Verification code generated for ${normalizedEmail}`);
-
     // Backend credentials
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -52,13 +50,52 @@ serve(async (req) => {
       });
     }
 
-    // Store code in DB (using 'phone' column to store email for compatibility)
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
 
-    // Clean up old codes for this email
-    await supabase.from("verification_codes").delete().eq("phone", normalizedEmail);
+    // Rate limiting: Check how many codes were sent to this email in the last hour
+    const oneHourAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+    
+    const { count: recentAttempts, error: countError } = await supabase
+      .from("verification_codes")
+      .select("*", { count: "exact", head: true })
+      .eq("phone", normalizedEmail)
+      .gte("created_at", oneHourAgo);
+
+    if (countError) {
+      console.error("Error checking rate limit:", countError);
+      // Continue without rate limiting if check fails - fail open for UX
+    } else if (recentAttempts !== null && recentAttempts >= RATE_LIMIT_MAX_REQUESTS) {
+      console.log(`Rate limit exceeded for ${normalizedEmail}: ${recentAttempts} attempts in last hour`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Too many verification attempts. Please try again in an hour." 
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "Retry-After": "3600"
+          } 
+        },
+      );
+    }
+
+    // Generate 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAtIso = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    console.log(`📧 Verification code generated for ${normalizedEmail}`);
+
+    // Insert new code (keep old codes for rate limiting tracking)
+    // Clean up only codes older than rate limit window
+    await supabase
+      .from("verification_codes")
+      .delete()
+      .eq("phone", normalizedEmail)
+      .lt("created_at", oneHourAgo);
 
     const { error: insertError } = await supabase.from("verification_codes").insert({
       phone: normalizedEmail,
@@ -127,11 +164,10 @@ serve(async (req) => {
       console.log("📧 Resend API Response:", {
         status: resendResponse.status,
         ok: resendResponse.ok,
-        result: resendResult,
       });
 
       if (resendResponse.ok && resendResult.id) {
-        console.log(`✅ Email sent successfully to ${normalizedEmail}, ID: ${resendResult.id}`);
+        console.log(`✅ Email sent successfully to ${normalizedEmail}`);
         
         return new Response(
           JSON.stringify({
@@ -139,7 +175,6 @@ serve(async (req) => {
             message: "Verification code sent to your email",
             email: normalizedEmail,
             emailSent: true,
-            emailId: resendResult.id,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
