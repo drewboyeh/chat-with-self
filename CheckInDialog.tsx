@@ -1,0 +1,156 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Sparkles } from "lucide-react";
+
+interface CheckInDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  reminder: {
+    id: string;
+    task: string;
+  };
+}
+
+export function CheckInDialog({ open, onOpenChange, reminder }: CheckInDialogProps) {
+  const [completed, setCompleted] = useState<boolean | null>(null);
+  const [reflection, setReflection] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const handleSubmit = async () => {
+    if (completed === null) {
+      toast({
+        title: "Please answer",
+        description: "Did you complete this task?",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Mark reminder as completed
+      const { error: reminderError } = await supabase
+        .from("reminders")
+        .update({ completed_at: new Date().toISOString() })
+        .eq("id", reminder.id);
+
+      if (reminderError) throw reminderError;
+
+      // If user wrote a reflection, save it as a journal entry
+      if (reflection.trim() && user) {
+        const reflectionText = `Did I ${reminder.task}? ${completed ? "Yes" : "No"}. ${reflection.trim()}`;
+
+        const { error: journalError } = await supabase.from("journal_entries").insert({
+          user_id: user.id,
+          content: reflectionText,
+          role: "user",
+        });
+
+        if (journalError) {
+          console.error("Error saving reflection:", journalError);
+        }
+      }
+
+      toast({
+        title: completed ? "Great job! 🎉" : "That's okay",
+        description: completed
+          ? "Your future self is proud of you."
+          : "Every day is a new opportunity.",
+      });
+
+      onOpenChange(false);
+      setCompleted(null);
+      setReflection("");
+    } catch (error) {
+      console.error("Error submitting check-in:", error);
+      toast({
+        title: "Something went wrong",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSkip = () => {
+    onOpenChange(false);
+    setCompleted(null);
+    setReflection("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <DialogTitle>Future Self Check-In</DialogTitle>
+          </div>
+          <DialogDescription>
+            Did you {reminder.task.toLowerCase()}?
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={completed === true ? "default" : "outline"}
+              onClick={() => setCompleted(true)}
+              className="flex-1"
+            >
+              Yes, I did it! ✅
+            </Button>
+            <Button
+              type="button"
+              variant={completed === false ? "default" : "outline"}
+              onClick={() => setCompleted(false)}
+              className="flex-1"
+            >
+              Not yet
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="reflection">
+              How will your future self feel about this? (Optional)
+            </Label>
+            <Textarea
+              id="reflection"
+              value={reflection}
+              onChange={(e) => setReflection(e.target.value)}
+              placeholder="Reflect on how completing (or not completing) this task makes you feel..."
+              className="min-h-[100px]"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={handleSkip}>
+            Skip
+          </Button>
+          <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save Reflection"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
