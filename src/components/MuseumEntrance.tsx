@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Palette, Paintbrush } from "lucide-react";
 import { useGoalArt } from "@/hooks/useGoalArt";
 import { useStreak } from "@/hooks/useStreak";
-import { useRewards } from "@/hooks/useRewards";
 
 interface MuseumEntranceProps {
   onEnterGallery: () => void;
@@ -12,7 +11,6 @@ interface MuseumEntranceProps {
 export function MuseumEntrance({ onEnterGallery, onEnterStudio }: MuseumEntranceProps) {
   const { artPieces, isLoading: artLoading } = useGoalArt();
   const { currentStreak } = useStreak();
-  const { rewards } = useRewards();
   const [hoveredDoor, setHoveredDoor] = useState<"gallery" | "studio" | null>(null);
 
   const totalArtPieces = artPieces.length;
@@ -197,12 +195,6 @@ export function MuseumEntrance({ onEnterGallery, onEnterStudio }: MuseumEntrance
               <div className="text-2xl md:text-3xl font-bold text-stone-700">{currentStreak}</div>
               <div className="text-xs md:text-sm text-stone-600">Day Streak</div>
             </div>
-            {rewards && (
-              <div className="bg-white/80 backdrop-blur-md rounded-xl px-4 md:px-6 py-3 md:py-4 border border-stone-200/50 shadow-lg">
-                <div className="text-2xl md:text-3xl font-bold text-stone-700">{rewards.level}</div>
-                <div className="text-xs md:text-sm text-stone-600">Level</div>
-              </div>
-            )}
           </div>
         )}
 
