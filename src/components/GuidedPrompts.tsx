@@ -78,11 +78,11 @@ export function GuidedPrompts({ open, onOpenChange }: GuidedPromptsProps) {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("prompt_responses").insert({
+      // Save as a journal entry with the prompt context
+      const { error } = await supabase.from("journal_entries").insert({
         user_id: user.id,
-        prompt_category: category,
-        prompt_text: currentPrompt,
-        response: response.trim(),
+        role: "user",
+        content: `[${category.toUpperCase()}] ${currentPrompt}\n\n${response.trim()}`,
       });
 
       if (error) throw error;
