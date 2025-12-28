@@ -158,7 +158,7 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
     if (success && progress >= 100) {
       toast({
         title: "🎨 Art Piece Created!",
-        description: artPiece ? `"${artPiece.title}" added to your gallery!` : "Amazing work! Your gallery grows with each completed project.",
+        description: "Amazing work! Your gallery grows with each completed goal.",
       });
     }
   };
