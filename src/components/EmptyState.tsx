@@ -1,5 +1,4 @@
-import { MessageSquare } from "lucide-react";
-import { FutureSelfArt } from "./FutureSelfArt";
+import { MessageSquare, Sparkles } from "lucide-react";
 
 interface EmptyStateProps {
   onStartWriting?: () => void;
@@ -9,9 +8,11 @@ export function EmptyState({ onStartWriting }: EmptyStateProps) {
   return (
     <div className="flex-1 flex items-center justify-center px-4">
       <div className="text-center max-w-2xl animate-fade-in space-y-8">
-        {/* Future Self Art */}
+        {/* Simple decorative element */}
         <div className="flex justify-center">
-          <FutureSelfArt size="lg" showStats={true} interactive={true} />
+          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-12 h-12 text-primary" />
+          </div>
         </div>
 
         <div className="space-y-4">
