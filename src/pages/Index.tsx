@@ -5,18 +5,19 @@ import { NameForm } from "@/components/NameForm";
 import { ChatJournal } from "@/components/ChatJournal";
 import { CheckInDialog } from "@/components/CheckInDialog";
 import { ArtGallery } from "@/components/ArtGallery";
+import { MuseumEntrance } from "@/components/MuseumEntrance";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoalArt, type GoalArtPiece } from "@/hooks/useGoalArt";
 import { ArtRenderer } from "@/components/ArtRenderer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Share2, Download, Star, BookOpen, Palette } from "lucide-react";
+import { Share2, Download, Star, BookOpen, Palette, Home } from "lucide-react";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const { checkInReminder, setCheckInReminder } = useReminders();
-  const [activeTab, setActiveTab] = useState("gallery");
+  const [activeTab, setActiveTab] = useState("home");
   const [galleryOpen, setGalleryOpen] = useState(false);
 
   if (loading) {
@@ -42,6 +43,13 @@ const Index = () => {
           <div className="max-w-7xl mx-auto px-4">
             <TabsList className="w-full justify-start bg-transparent h-auto p-0">
               <TabsTrigger 
+                value="home" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Entrance
+              </TabsTrigger>
+              <TabsTrigger 
                 value="gallery" 
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4"
               >
@@ -60,12 +68,19 @@ const Index = () => {
         </div>
 
         {/* Tab Content */}
-        <TabsContent value="journal" className="flex-1 m-0">
-          <ChatJournal />
+        <TabsContent value="home" className="flex-1 m-0">
+          <MuseumEntrance 
+            onEnterGallery={() => setActiveTab("gallery")}
+            onEnterStudio={() => setActiveTab("journal")}
+          />
         </TabsContent>
 
         <TabsContent value="gallery" className="flex-1 m-0">
           <GalleryView onSwitchToJournal={() => setActiveTab("journal")} />
+        </TabsContent>
+
+        <TabsContent value="journal" className="flex-1 m-0">
+          <ChatJournal />
         </TabsContent>
       </Tabs>
 
