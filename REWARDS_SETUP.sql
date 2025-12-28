@@ -55,14 +55,25 @@ ALTER TABLE public.user_achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.points_history ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Users can view their own rewards" ON public.user_rewards;
 CREATE POLICY "Users can view their own rewards" ON public.user_rewards FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update their own rewards" ON public.user_rewards;
 CREATE POLICY "Users can update their own rewards" ON public.user_rewards FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "System can insert rewards" ON public.user_rewards;
 CREATE POLICY "System can insert rewards" ON public.user_rewards FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view their own achievements" ON public.user_achievements;
 CREATE POLICY "Users can view their own achievements" ON public.user_achievements FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "System can insert achievements" ON public.user_achievements;
 CREATE POLICY "System can insert achievements" ON public.user_achievements FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view their own points history" ON public.points_history;
 CREATE POLICY "Users can view their own points history" ON public.points_history FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "System can insert points history" ON public.points_history;
 CREATE POLICY "System can insert points history" ON public.points_history FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Indexes
