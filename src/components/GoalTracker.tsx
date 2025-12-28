@@ -18,10 +18,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoals, Goal } from "@/hooks/useGoals";
-import { useRewards } from "@/hooks/useRewards";
-import { useGoalArt } from "@/hooks/useGoalArt";
-import { CelebrationDialog } from "./CelebrationDialog";
-import { LevelUpDialog } from "./LevelUpDialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus,
@@ -122,22 +118,12 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
     description: "",
     category: "personal",
     targetDate: "",
-    timeframe: "monthly" as string,
-    isRecurring: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { activeGoals, completedGoals, createGoal, updateGoalProgress, deleteGoal } =
     useGoals();
   const { toast } = useToast();
-  const { awardPoints, incrementGoal } = useRewards();
-  const { recordGoalCompletion, updateLongTermArtProgress } = useGoalArt();
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [showLevelUp, setShowLevelUp] = useState(false);
-  const [celebrationPoints, setCelebrationPoints] = useState(0);
-  const [newAchievements, setNewAchievements] = useState<any[]>([]);
-  const [levelUpInfo, setLevelUpInfo] = useState<{ oldLevel: number; newLevel: number; totalPoints: number } | null>(null);
-  const { rewards } = useRewards();
 
   const handleCreateGoal = async () => {
     if (!newGoal.title.trim()) return;
@@ -147,23 +133,15 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
       newGoal.title,
       newGoal.category,
       newGoal.description,
-      newGoal.targetDate || undefined,
-      newGoal.timeframe,
-      newGoal.isRecurring,
-      newGoal.isRecurring ? newGoal.timeframe : undefined
+      newGoal.targetDate || undefined
     );
 
     if (result) {
-      // For long-term goals, create initial art piece
-      if (newGoal.timeframe === "long_term" && result.id) {
-        await updateLongTermArtProgress(result.id, 0);
-      }
-
       toast({
         title: "Goal created",
         description: "Stay focused and make progress every day!",
       });
-      setNewGoal({ title: "", description: "", category: "personal", targetDate: "", timeframe: "monthly", isRecurring: false });
+      setNewGoal({ title: "", description: "", category: "personal", targetDate: "" });
       setShowNewGoal(false);
     } else {
       toast({
@@ -176,68 +154,12 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
   };
 
   const handleUpdateProgress = async (goalId: string, progress: number) => {
-    const goal = activeGoals.find((g) => g.id === goalId);
-    const isLongTerm = goal?.timeframe === "long_term";
-    
-    // For long-term goals, update art progress
-    if (isLongTerm && goal) {
-      await updateLongTermArtProgress(goalId, progress);
-    }
-
     const success = await updateGoalProgress(goalId, progress);
     if (success && progress >= 100) {
-      // Record completion for art unlocking
-      if (goal) {
-        const artPiece = await recordGoalCompletion(
-          goalId,
-          goal.timeframe || "monthly",
-          goal.is_recurring || false
-        );
-
-        if (artPiece) {
-          toast({
-            title: "🎨 Art Unlocked!",
-            description: `You've unlocked "${artPiece.title}"!`,
-          });
-        }
-      }
-
-      // Award points for completing goal
-      const pointsAwarded = 50; // Base points for completing a goal
-      
-      const result = await awardPoints(
-        pointsAwarded,
-        "goal_completed",
-        goalId,
-        `Completed goal: ${goal?.title || "Goal"}`
-      );
-
-      // Increment goal count and check for achievements
-      const achievements = await incrementGoal();
-
-      // Check for level up first (most important!)
-      if (result.leveledUp && rewards) {
-        setLevelUpInfo({
-          oldLevel: result.oldLevel,
-          newLevel: result.newLevel,
-          totalPoints: rewards.total_points + pointsAwarded,
-        });
-        setShowLevelUp(true);
-      } else if (result.success || achievements.length > 0) {
-        // Show celebration for achievements or points
-        if (achievements.length > 0) {
-          setNewAchievements(achievements);
-          setCelebrationPoints(pointsAwarded);
-        } else {
-          setCelebrationPoints(pointsAwarded);
-        }
-        setShowCelebration(true);
-      } else {
-        toast({
-          title: "🎉 Goal completed!",
-          description: `You earned ${pointsAwarded} points!`,
-        });
-      }
+      toast({
+        title: "🎉 Goal completed!",
+        description: "Amazing work! Time to set a new goal.",
+      });
     }
   };
 
@@ -252,8 +174,7 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
   };
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl flex items-center gap-2">
@@ -321,46 +242,6 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
                     }
                     className="flex-1"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Select
-                    value={newGoal.timeframe}
-                    onValueChange={(v) =>
-                      setNewGoal({ ...newGoal, timeframe: v })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Goal timeframe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                      <SelectItem value="long_term">Long-term (Years)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {newGoal.timeframe !== "long_term" && (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="recurring"
-                        checked={newGoal.isRecurring}
-                        onChange={(e) =>
-                          setNewGoal({ ...newGoal, isRecurring: e.target.checked })
-                        }
-                        className="rounded"
-                      />
-                      <label htmlFor="recurring" className="text-sm text-muted-foreground">
-                        Recurring goal (repeat each {newGoal.timeframe})
-                      </label>
-                    </div>
-                  )}
-                  {newGoal.timeframe === "long_term" && (
-                    <p className="text-xs text-muted-foreground">
-                      Long-term goals will unlock art that completes as you progress!
-                    </p>
-                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -455,47 +336,5 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
         </Tabs>
       </DialogContent>
     </Dialog>
-
-    <CelebrationDialog
-      open={showCelebration && !showLevelUp}
-      onClose={() => {
-        setShowCelebration(false);
-        setNewAchievements([]);
-      }}
-      type={newAchievements.length > 0 ? "achievement" : "goal"}
-      points={celebrationPoints}
-      achievement={
-        newAchievements.length > 0
-          ? {
-              name: newAchievements[0].name,
-              description: newAchievements[0].description,
-              icon: newAchievements[0].icon,
-            }
-          : undefined
-      }
-      message={
-        newAchievements.length > 0
-          ? `You unlocked: ${newAchievements[0].name}!`
-          : "Amazing work! Time to set a new goal."
-      }
-    />
-
-    {levelUpInfo && (
-      <LevelUpDialog
-        open={showLevelUp}
-        onClose={() => {
-          setShowLevelUp(false);
-          setLevelUpInfo(null);
-          // Show celebration after level up if there are achievements
-          if (newAchievements.length > 0) {
-            setShowCelebration(true);
-          }
-        }}
-        oldLevel={levelUpInfo.oldLevel}
-        newLevel={levelUpInfo.newLevel}
-        totalPoints={levelUpInfo.totalPoints}
-      />
-    )}
-    </>
   );
 }

@@ -1,12 +1,8 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { BookOpen, LogOut, Sparkles, Menu, X, Palette } from "lucide-react";
+import { BookOpen, LogOut, Sparkles, Menu, X } from "lucide-react";
 import { StreakCounter } from "./StreakCounter";
 import { WellnessHub } from "./WellnessHub";
-import { LevelDisplay } from "./LevelDisplay";
-import { ArtGallery } from "./ArtGallery";
-import { useRewards } from "@/hooks/useRewards";
 
 interface ChatHeaderProps {
   onOpenFutureVisions?: () => void;
@@ -28,8 +24,6 @@ export function ChatHeader({
   onOpenGoals,
 }: ChatHeaderProps) {
   const { signOut } = useAuth();
-  const { rewards } = useRewards();
-  const [artGalleryOpen, setArtGalleryOpen] = useState(false);
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
@@ -61,11 +55,6 @@ export function ChatHeader({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {rewards && (
-            <div className="hidden md:block">
-              <LevelDisplay totalPoints={rewards.total_points} size="sm" showProgress={false} />
-            </div>
-          )}
           <StreakCounter />
           {onOpenMoodTracker && onOpenMoodHistory && onOpenPrompts && onOpenGoals && (
             <WellnessHub
@@ -75,24 +64,6 @@ export function ChatHeader({
               onOpenGoals={onOpenGoals}
             />
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setArtGalleryOpen(true)}
-            className="text-primary border-primary/30 hover:bg-primary/10 hidden sm:flex"
-          >
-            <Palette className="w-4 h-4 mr-2" />
-            Art Gallery
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setArtGalleryOpen(true)}
-            className="text-primary sm:hidden"
-            title="Art Gallery"
-          >
-            <Palette className="w-5 h-5" />
-          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -121,7 +92,6 @@ export function ChatHeader({
           </Button>
         </div>
       </div>
-      <ArtGallery open={artGalleryOpen} onOpenChange={setArtGalleryOpen} />
     </header>
   );
 }

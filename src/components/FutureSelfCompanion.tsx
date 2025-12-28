@@ -2,10 +2,8 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { useRewards } from "@/hooks/useRewards";
 import { useStreak } from "@/hooks/useStreak";
-import { getLevelInfo, getLevelTitle } from "@/lib/levelSystem";
-import { Sparkles, Heart, TrendingUp, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface FutureSelfCompanionProps {
@@ -13,22 +11,18 @@ interface FutureSelfCompanionProps {
 }
 
 export function FutureSelfCompanion({ className = "" }: FutureSelfCompanionProps) {
-  const { rewards, levelInfo } = useRewards();
-  const { currentStreak } = useStreak();
+  const { streak } = useStreak();
   const { userName } = useAuth();
   const [companionMessage, setCompanionMessage] = useState("");
   const [showMessage, setShowMessage] = useState(false);
 
-  // Calculate realization percentage based on level and activities
+  const currentStreak = streak?.current_streak || 0;
+  const longestStreak = streak?.longest_streak || 0;
+
+  // Calculate realization percentage based on streak
   const calculateRealization = () => {
-    if (!rewards || !levelInfo) return 0;
-    
-    const levelProgress = levelInfo.progressPercent;
-    const baseRealization = (levelInfo.level - 1) * 20; // Each level = 20% base
-    const currentLevelProgress = (levelProgress / 100) * 20; // Current level progress
-    const totalRealization = Math.min(100, baseRealization + currentLevelProgress);
-    
-    return Math.round(totalRealization);
+    // Simple calculation based on current streak
+    return Math.min(100, currentStreak * 5);
   };
 
   const realization = calculateRealization();
@@ -54,8 +48,6 @@ export function FutureSelfCompanion({ className = "" }: FutureSelfCompanionProps
 
   // Generate companion messages
   useEffect(() => {
-    if (!rewards || !levelInfo) return;
-
     const messages = [
       "Every journal entry brings me closer to reality.",
       "You're doing great! I'm becoming more real every day.",
@@ -78,11 +70,7 @@ export function FutureSelfCompanion({ className = "" }: FutureSelfCompanionProps
 
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
     setCompanionMessage(randomMessage);
-  }, [rewards, levelInfo, realization]);
-
-  if (!rewards || !levelInfo) {
-    return null;
-  }
+  }, [realization]);
 
   return (
     <Card className={`p-6 space-y-4 ${className}`}>
@@ -123,25 +111,20 @@ export function FutureSelfCompanion({ className = "" }: FutureSelfCompanionProps
         </div>
         <Progress value={realization} className="h-3" />
         <p className="text-xs text-muted-foreground">
-          Stage {stage} of 5 • {getLevelTitle(levelInfo.level)}
+          Stage {stage} of 5
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 pt-2 border-t">
+      <div className="grid grid-cols-2 gap-2 pt-2 border-t">
         <div className="text-center">
           <div className="text-2xl mb-1">🔥</div>
           <div className="text-xs font-medium">{currentStreak}</div>
           <div className="text-xs text-muted-foreground">Day Streak</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl mb-1">⭐</div>
-          <div className="text-xs font-medium">{levelInfo.level}</div>
-          <div className="text-xs text-muted-foreground">Level</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl mb-1">💪</div>
-          <div className="text-xs font-medium">{rewards.completed_goals}</div>
-          <div className="text-xs text-muted-foreground">Goals Done</div>
+          <div className="text-2xl mb-1">🏆</div>
+          <div className="text-xs font-medium">{longestStreak}</div>
+          <div className="text-xs text-muted-foreground">Best Streak</div>
         </div>
       </div>
 
@@ -153,4 +136,3 @@ export function FutureSelfCompanion({ className = "" }: FutureSelfCompanionProps
     </Card>
   );
 }
-
