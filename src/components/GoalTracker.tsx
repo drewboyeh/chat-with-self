@@ -138,8 +138,8 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
 
     if (result) {
       toast({
-        title: "Goal created",
-        description: "Stay focused and make progress every day!",
+        title: "Art Project Started",
+        description: "Every step forward creates art in your gallery. Keep going!",
       });
       setNewGoal({ title: "", description: "", category: "personal", targetDate: "" });
       setShowNewGoal(false);
@@ -177,9 +177,9 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl flex items-center gap-2">
+            <DialogTitle className="font-serif text-2xl flex items-center gap-2">
             <Target className="w-6 h-6 text-primary" />
-            My Goals
+            Art Projects
           </DialogTitle>
         </DialogHeader>
 
@@ -198,14 +198,14 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
             {showNewGoal ? (
               <div className="bg-muted rounded-xl p-4 space-y-3 animate-fade-in">
                 <Input
-                  placeholder="What's your goal?"
+                  placeholder="What art piece are you creating?"
                   value={newGoal.title}
                   onChange={(e) =>
                     setNewGoal({ ...newGoal, title: e.target.value })
                   }
                 />
                 <Textarea
-                  placeholder="Why is this important to you? (optional)"
+                  placeholder="What will this art piece represent? (optional)"
                   value={newGoal.description}
                   onChange={(e) =>
                     setNewGoal({ ...newGoal, description: e.target.value })
@@ -256,7 +256,7 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
                     disabled={!newGoal.title.trim() || isSubmitting}
                     className="flex-1"
                   >
-                    {isSubmitting ? "Creating..." : "Create Goal"}
+                    {isSubmitting ? "Creating..." : "Start Art Project"}
                   </Button>
                 </div>
               </div>
@@ -267,7 +267,7 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
                 onClick={() => setShowNewGoal(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add New Goal
+                Start New Art Project
               </Button>
             )}
 

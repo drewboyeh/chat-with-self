@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useReminders } from "@/hooks/useReminders";
 import { NameForm } from "@/components/NameForm";
@@ -16,7 +16,7 @@ import { Share2, Download, Star, BookOpen, Palette } from "lucide-react";
 const Index = () => {
   const { user, loading } = useAuth();
   const { checkInReminder, setCheckInReminder } = useReminders();
-  const [activeTab, setActiveTab] = useState("journal");
+  const [activeTab, setActiveTab] = useState("gallery");
   const [galleryOpen, setGalleryOpen] = useState(false);
 
   if (loading) {
@@ -42,18 +42,18 @@ const Index = () => {
           <div className="max-w-7xl mx-auto px-4">
             <TabsList className="w-full justify-start bg-transparent h-auto p-0">
               <TabsTrigger 
-                value="journal" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4"
-              >
-                <BookOpen className="w-4 h-4 mr-2" />
-                Journal
-              </TabsTrigger>
-              <TabsTrigger 
                 value="gallery" 
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4"
               >
                 <Palette className="w-4 h-4 mr-2" />
                 Gallery
+              </TabsTrigger>
+              <TabsTrigger 
+                value="journal" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Create Art
               </TabsTrigger>
             </TabsList>
           </div>
@@ -65,7 +65,7 @@ const Index = () => {
         </TabsContent>
 
         <TabsContent value="gallery" className="flex-1 m-0">
-          <GalleryView />
+          <GalleryView onSwitchToJournal={() => setActiveTab("journal")} />
         </TabsContent>
       </Tabs>
 
@@ -84,7 +84,7 @@ const Index = () => {
   );
 };
 
-function GalleryView() {
+function GalleryView({ onSwitchToJournal }: { onSwitchToJournal?: () => void }) {
   const { artPieces, isLoading } = useGoalArt();
   const [selectedArt, setSelectedArt] = useState<GoalArtPiece | null>(null);
 
@@ -122,9 +122,9 @@ function GalleryView() {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-serif font-bold mb-2">Art Gallery</h1>
-          <p className="text-muted-foreground">
-            Your collection of art pieces unlocked through goal completion
+          <h1 className="text-4xl font-serif font-bold mb-2">Your Gallery</h1>
+          <p className="text-lg text-muted-foreground">
+            You are a work of art. Every goal you complete, every reflection you make, creates a new piece in your collection.
           </p>
         </div>
 
@@ -141,11 +141,16 @@ function GalleryView() {
             <TabsContent key={type} value={type}>
               {pieces.length === 0 ? (
                 <div className="text-center py-12">
-                  <Star className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">No {type === "all" ? "" : type} art pieces yet.</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Complete goals to unlock beautiful art pieces!
+                  <Palette className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground text-lg font-medium">Your gallery is empty.</p>
+                  <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto mb-6">
+                    Start creating art by setting art projects (goals) and reflecting on your journey. Each piece represents your growth—you are the art being created.
                   </p>
+                  {onSwitchToJournal && (
+                    <Button onClick={onSwitchToJournal} size="lg">
+                      Start Creating Your First Art Piece
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

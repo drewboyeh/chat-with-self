@@ -47,10 +47,10 @@ export function ChatHeader({
           </div>
           <div>
             <h1 className="text-xl font-serif font-medium text-foreground">
-              Chat Journal
+              Create Art
             </h1>
             <p className="text-xs text-muted-foreground">
-              Reflecting with your past self
+              Every reflection becomes art in your gallery
             </p>
           </div>
         </div>

@@ -52,8 +52,8 @@ export function WellnessHub({
     },
     {
       icon: <Target className="w-6 h-6" />,
-      label: "My Goals",
-      description: "Track your progress",
+      label: "Art Projects",
+      description: "Create art for your gallery",
       onClick: onOpenGoals,
     },
   ];

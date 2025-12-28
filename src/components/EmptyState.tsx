@@ -1,4 +1,4 @@
-import { MessageSquare, Sparkles } from "lucide-react";
+import { Palette, Sparkles } from "lucide-react";
 
 interface EmptyStateProps {
   onStartWriting?: () => void;
@@ -11,19 +11,19 @@ export function EmptyState({ onStartWriting }: EmptyStateProps) {
         {/* Simple decorative element */}
         <div className="flex justify-center">
           <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
-            <Sparkles className="w-12 h-12 text-primary" />
+            <Palette className="w-12 h-12 text-primary" />
           </div>
         </div>
 
         <div className="space-y-4">
           <h2 className="text-2xl font-serif font-medium text-foreground">
-            Start Your First Entry
+            Create Your First Art Piece
           </h2>
           <p className="text-muted-foreground leading-relaxed max-w-md mx-auto">
-            Share what's on your mind. Every entry helps your future self become more realized.
+            Every reflection, every goal, every moment of growth becomes art in your gallery. Start creating.
           </p>
           <div className="mt-6 flex flex-wrap gap-2 justify-center">
-            {["How are you feeling today?", "What's on your mind?", "Describe your day"].map(
+            {["What are you creating today?", "What's growing in you?", "What art are you making?"].map(
               (prompt) => (
                 <button
                   key={prompt}

@@ -189,14 +189,18 @@ When they share something:
 
       systemPrompt = `${baseStyle}
 
+IMPORTANT: Frame everything around creating art and growing their gallery. You're helping them create art pieces through reflection and goal completion.
+
 Response style:
 - 2-4 sentences unless going deeper.
-- No motivational fluff or affirmations.
+- Frame reflections as "creating art" or "adding to your gallery"
+- Talk about their growth as art being created
 - Be warm but professional.
+- Focus on possibility and small wins.
 
 ${previousEntries && previousEntries.length > 0 
-  ? `Their journal history for context:\n\n${journalContext}\n\nUse patterns you notice to personalize your approach.`
-  : "This is their first entry. Introduce yourself briefly and invite them to share what's on their mind."}`;
+  ? `Their journal history for context:\n\n${journalContext}\n\nUse patterns you notice to personalize your approach. Remember: every reflection is creating art for their gallery.`
+  : "This is their first entry. Welcome them and explain that every reflection they make creates art in their gallery. Invite them to start creating."}`;
     }
 
     const messages = [

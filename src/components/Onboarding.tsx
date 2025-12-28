@@ -12,18 +12,18 @@ export function Onboarding({ onComplete, onStartWriting }: OnboardingProps) {
 
   const steps = [
     {
-      title: "Welcome! I'm Your Past Self",
-      description: "I'm here to remember your journey and help you grow. Every entry you write becomes part of our shared memory.",
-      icon: BookOpen,
+      title: "You Are a Work of Art",
+      description: "Every goal you complete, every reflection you make, creates a new piece in your gallery. You're not just growing—you're creating art.",
+      icon: Palette,
     },
     {
-      title: "I'll Remember Everything",
-      description: "I'll remember your struggles, celebrate your wins, and be here whenever you need me. Just start writing.",
+      title: "Your Gallery Grows With You",
+      description: "Set goals, reflect on your journey, and watch your gallery fill with beautiful art pieces that represent your growth.",
       icon: Sparkles,
     },
     {
-      title: "Ready to Begin?",
-      description: "Start by sharing what's on your mind. There's no right or wrong way to journal - just be yourself.",
+      title: "Start Creating",
+      description: "Begin by setting a goal or reflecting on your journey. Each action adds to your gallery—your collection of who you're becoming.",
       icon: ArrowRight,
     },
   ];
