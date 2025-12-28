@@ -13,6 +13,10 @@ export interface Goal {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  timeframe?: string;
+  is_recurring?: boolean;
+  recurrence_pattern?: string;
+  art_piece_id?: string | null;
 }
 
 export function useGoals() {
@@ -49,7 +53,10 @@ export function useGoals() {
     title: string,
     category: string,
     description?: string,
-    targetDate?: string
+    targetDate?: string,
+    timeframe: string = "monthly",
+    isRecurring: boolean = false,
+    recurrencePattern?: string
   ) => {
     if (!user) return null;
 
@@ -62,6 +69,9 @@ export function useGoals() {
           category,
           description: description || null,
           target_date: targetDate || null,
+          timeframe: timeframe || "monthly",
+          is_recurring: isRecurring || false,
+          recurrence_pattern: recurrencePattern || null,
         })
         .select()
         .single();

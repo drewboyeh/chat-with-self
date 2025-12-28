@@ -17,9 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
 import { useGoals, Goal } from "@/hooks/useGoals";
 import { useRewards } from "@/hooks/useRewards";
+import { useGoalArt } from "@/hooks/useGoalArt";
 import { CelebrationDialog } from "./CelebrationDialog";
 import { LevelUpDialog } from "./LevelUpDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -122,6 +122,8 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
     description: "",
     category: "personal",
     targetDate: "",
+    timeframe: "monthly" as string,
+    isRecurring: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -129,6 +131,7 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
     useGoals();
   const { toast } = useToast();
   const { awardPoints, incrementGoal } = useRewards();
+  const { recordGoalCompletion, updateLongTermArtProgress } = useGoalArt();
   const [showCelebration, setShowCelebration] = useState(false);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [celebrationPoints, setCelebrationPoints] = useState(0);
@@ -144,15 +147,23 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
       newGoal.title,
       newGoal.category,
       newGoal.description,
-      newGoal.targetDate || undefined
+      newGoal.targetDate || undefined,
+      newGoal.timeframe,
+      newGoal.isRecurring,
+      newGoal.isRecurring ? newGoal.timeframe : undefined
     );
 
     if (result) {
+      // For long-term goals, create initial art piece
+      if (newGoal.timeframe === "long_term" && result.id) {
+        await updateLongTermArtProgress(result.id, 0);
+      }
+
       toast({
         title: "Goal created",
         description: "Stay focused and make progress every day!",
       });
-      setNewGoal({ title: "", description: "", category: "personal", targetDate: "" });
+      setNewGoal({ title: "", description: "", category: "personal", targetDate: "", timeframe: "monthly", isRecurring: false });
       setShowNewGoal(false);
     } else {
       toast({
@@ -165,11 +176,34 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
   };
 
   const handleUpdateProgress = async (goalId: string, progress: number) => {
+    const goal = activeGoals.find((g) => g.id === goalId);
+    const isLongTerm = goal?.timeframe === "long_term";
+    
+    // For long-term goals, update art progress
+    if (isLongTerm && goal) {
+      await updateLongTermArtProgress(goalId, progress);
+    }
+
     const success = await updateGoalProgress(goalId, progress);
     if (success && progress >= 100) {
+      // Record completion for art unlocking
+      if (goal) {
+        const artPiece = await recordGoalCompletion(
+          goalId,
+          goal.timeframe || "monthly",
+          goal.is_recurring || false
+        );
+
+        if (artPiece) {
+          toast({
+            title: "🎨 Art Unlocked!",
+            description: `You've unlocked "${artPiece.title}"!`,
+          });
+        }
+      }
+
       // Award points for completing goal
       const pointsAwarded = 50; // Base points for completing a goal
-      const goal = activeGoals.find((g) => g.id === goalId);
       
       const result = await awardPoints(
         pointsAwarded,
@@ -287,6 +321,46 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
                     }
                     className="flex-1"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Select
+                    value={newGoal.timeframe}
+                    onValueChange={(v) =>
+                      setNewGoal({ ...newGoal, timeframe: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Goal timeframe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                      <SelectItem value="long_term">Long-term (Years)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {newGoal.timeframe !== "long_term" && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="recurring"
+                        checked={newGoal.isRecurring}
+                        onChange={(e) =>
+                          setNewGoal({ ...newGoal, isRecurring: e.target.checked })
+                        }
+                        className="rounded"
+                      />
+                      <label htmlFor="recurring" className="text-sm text-muted-foreground">
+                        Recurring goal (repeat each {newGoal.timeframe})
+                      </label>
+                    </div>
+                  )}
+                  {newGoal.timeframe === "long_term" && (
+                    <p className="text-xs text-muted-foreground">
+                      Long-term goals will unlock art that completes as you progress!
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button

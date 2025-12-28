@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { BookOpen, LogOut, Sparkles, Menu, X } from "lucide-react";
+import { BookOpen, LogOut, Sparkles, Menu, X, Palette } from "lucide-react";
 import { StreakCounter } from "./StreakCounter";
 import { WellnessHub } from "./WellnessHub";
 import { LevelDisplay } from "./LevelDisplay";
+import { ArtGallery } from "./ArtGallery";
 import { useRewards } from "@/hooks/useRewards";
 
 interface ChatHeaderProps {
@@ -27,6 +29,7 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const { signOut } = useAuth();
   const { rewards } = useRewards();
+  const [artGalleryOpen, setArtGalleryOpen] = useState(false);
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
@@ -75,6 +78,24 @@ export function ChatHeader({
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setArtGalleryOpen(true)}
+            className="text-primary border-primary/30 hover:bg-primary/10 hidden sm:flex"
+          >
+            <Palette className="w-4 h-4 mr-2" />
+            Art Gallery
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setArtGalleryOpen(true)}
+            className="text-primary sm:hidden"
+            title="Art Gallery"
+          >
+            <Palette className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onOpenFutureVisions}
             className="text-primary border-primary/30 hover:bg-primary/10 hidden sm:flex"
           >
@@ -100,6 +121,7 @@ export function ChatHeader({
           </Button>
         </div>
       </div>
+      <ArtGallery open={artGalleryOpen} onOpenChange={setArtGalleryOpen} />
     </header>
   );
 }
