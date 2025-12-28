@@ -1,0 +1,211 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+@layer base {
+  :root {
+    /* Warm, contemplative color palette */
+    --background: 40 30% 97%;
+    --foreground: 30 20% 15%;
+
+    --card: 40 25% 95%;
+    --card-foreground: 30 20% 15%;
+
+    --popover: 40 30% 97%;
+    --popover-foreground: 30 20% 15%;
+
+    /* Warm amber primary */
+    --primary: 35 85% 50%;
+    --primary-foreground: 40 30% 98%;
+
+    /* Soft cream secondary */
+    --secondary: 38 25% 90%;
+    --secondary-foreground: 30 20% 20%;
+
+    --muted: 35 20% 92%;
+    --muted-foreground: 30 15% 45%;
+
+    /* Subtle sage accent */
+    --accent: 145 20% 88%;
+    --accent-foreground: 145 25% 25%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 35 20% 88%;
+    --input: 35 20% 88%;
+    --ring: 35 85% 50%;
+
+    --radius: 1rem;
+
+    /* Chat-specific colors */
+    --chat-user: 35 85% 50%;
+    --chat-user-foreground: 40 30% 98%;
+    --chat-assistant: 38 30% 92%;
+    --chat-assistant-foreground: 30 20% 20%;
+
+    /* Custom design tokens */
+    --gradient-warm: linear-gradient(135deg, hsl(35 85% 50%), hsl(25 90% 55%));
+    --gradient-soft: linear-gradient(180deg, hsl(40 30% 97%), hsl(38 25% 94%));
+    --shadow-warm: 0 4px 20px -4px hsl(35 85% 50% / 0.2);
+    --shadow-soft: 0 2px 12px -2px hsl(30 20% 15% / 0.08);
+
+    --sidebar-background: 40 25% 95%;
+    --sidebar-foreground: 30 20% 25%;
+    --sidebar-primary: 35 85% 50%;
+    --sidebar-primary-foreground: 40 30% 98%;
+    --sidebar-accent: 38 30% 92%;
+    --sidebar-accent-foreground: 30 20% 20%;
+    --sidebar-border: 35 20% 88%;
+    --sidebar-ring: 35 85% 50%;
+  }
+
+  .dark {
+    /* Deep twilight dark mode */
+    --background: 230 25% 10%;
+    --foreground: 40 30% 92%;
+
+    --card: 230 22% 14%;
+    --card-foreground: 40 30% 92%;
+
+    --popover: 230 25% 10%;
+    --popover-foreground: 40 30% 92%;
+
+    /* Warm amber in dark mode */
+    --primary: 35 80% 55%;
+    --primary-foreground: 230 25% 10%;
+
+    --secondary: 230 18% 18%;
+    --secondary-foreground: 40 25% 88%;
+
+    --muted: 230 18% 18%;
+    --muted-foreground: 40 15% 55%;
+
+    --accent: 230 18% 22%;
+    --accent-foreground: 40 25% 88%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 230 18% 18%;
+    --input: 230 18% 18%;
+    --ring: 35 80% 55%;
+
+    --chat-user: 35 80% 55%;
+    --chat-user-foreground: 230 25% 10%;
+    --chat-assistant: 230 18% 18%;
+    --chat-assistant-foreground: 40 25% 90%;
+
+    --sidebar-background: 230 22% 12%;
+    --sidebar-foreground: 40 25% 88%;
+    --sidebar-primary: 35 80% 55%;
+    --sidebar-primary-foreground: 230 25% 10%;
+    --sidebar-accent: 230 18% 18%;
+    --sidebar-accent-foreground: 40 25% 88%;
+    --sidebar-border: 230 18% 18%;
+    --sidebar-ring: 35 80% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+@layer utilities {
+  .font-serif {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  .font-sans {
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+}
+
+/* Smooth animations */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+  .animate-message-in {
+    animation: messageIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-typing {
+    animation: typing 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes messageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes typing {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Custom scrollbar */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.3);
+}
