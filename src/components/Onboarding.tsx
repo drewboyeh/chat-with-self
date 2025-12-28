@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { BookOpen, ArrowRight, Sparkles } from "lucide-react";
+import { Palette, ArrowRight, Sparkles } from "lucide-react";
 
 interface OnboardingProps {
   onComplete: () => void;
