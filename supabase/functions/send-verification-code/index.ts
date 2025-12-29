@@ -125,8 +125,14 @@ serve(async (req) => {
       );
     }
 
+    // Get sender email from environment variable, or use default test domain
+    // NOTE: Using "onboarding@resend.dev" only allows sending to verified recipient emails
+    // To send to ANY email, verify your own domain in Resend and set RESEND_FROM_EMAIL
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
+
     try {
       console.log("📧 Sending email via Resend to:", normalizedEmail);
+      console.log("📧 From email:", fromEmail);
       
       const resendResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -135,7 +141,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "onboarding@resend.dev",
+          from: fromEmail,
           to: normalizedEmail,
           subject: "Your Verification Code",
           html: `
