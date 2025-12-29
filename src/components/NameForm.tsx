@@ -45,7 +45,11 @@ const therapistStyles = [
   },
 ];
 
-export function NameForm() {
+interface NameFormProps {
+  onComplete?: () => void;
+}
+
+export function NameForm({ onComplete }: NameFormProps = { onComplete: undefined }) {
   const [step, setStep] = useState(1); // 1 = welcome, 2 = email, 3 = verify, 4 = style, 5 = name
   const [email, setEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
@@ -223,6 +227,9 @@ export function NameForm() {
         title: `Welcome, ${name}!`,
         description: "Your journey begins now.",
       });
+      if (onComplete) {
+        onComplete();
+      }
     }
   };
 

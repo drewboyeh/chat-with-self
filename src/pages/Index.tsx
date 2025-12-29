@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useReminders } from "@/hooks/useReminders";
 import { NameForm } from "@/components/NameForm";
+import { GoalDiscovery } from "@/components/GoalDiscovery";
 import { ChatJournal } from "@/components/ChatJournal";
 import { CheckInDialog } from "@/components/CheckInDialog";
 import { ArtGallery } from "@/components/ArtGallery";
@@ -19,6 +20,7 @@ const Index = () => {
   const { checkInReminder, setCheckInReminder } = useReminders();
   const [activeTab, setActiveTab] = useState("home");
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [showGoalDiscovery, setShowGoalDiscovery] = useState(false);
 
   if (loading) {
     return (
@@ -32,7 +34,16 @@ const Index = () => {
   }
 
   if (!user) {
-    return <NameForm />;
+    return <NameForm onComplete={() => setShowGoalDiscovery(true)} />;
+  }
+
+  if (showGoalDiscovery) {
+    return (
+      <GoalDiscovery
+        onComplete={() => setShowGoalDiscovery(false)}
+        onSkip={() => setShowGoalDiscovery(false)}
+      />
+    );
   }
 
   return (
