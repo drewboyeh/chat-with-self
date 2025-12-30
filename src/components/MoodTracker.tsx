@@ -48,9 +48,10 @@ export function MoodTracker({ open, onOpenChange }: MoodTrackerProps) {
     } else {
       toast({
         title: "Failed to log mood",
-        description: "Please try again.",
+        description: "The mood_entries table may not exist. Please check the console for details.",
         variant: "destructive",
       });
+      console.error("Mood logging failed. Check if mood_entries table exists in Supabase.");
     }
     setIsSubmitting(false);
   };
