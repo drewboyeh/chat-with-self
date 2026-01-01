@@ -46,3 +46,4 @@ If you see a different URL or `false`, the environment variables aren't set corr
 - **Missing key**: The `anon public` key is required, not the `service_role` key
 - **Cache**: After updating env vars, wait 2-5 minutes and hard refresh (Cmd+Shift+R)
 
+

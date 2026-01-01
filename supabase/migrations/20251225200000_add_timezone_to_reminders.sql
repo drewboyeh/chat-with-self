@@ -21,3 +21,4 @@ UPDATE public.reminders
 SET timezone = 'UTC' 
 WHERE timezone IS NULL;
 
+

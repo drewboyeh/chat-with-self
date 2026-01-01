@@ -76,3 +76,4 @@ Database Table Structure:
 
 The system uses unique UUIDs for identification, not names. Names are just for a friendly, personalized experience. Each user's data is completely isolated and secure, regardless of whether they share a name with someone else.
 
+

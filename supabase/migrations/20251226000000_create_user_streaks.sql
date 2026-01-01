@@ -48,3 +48,4 @@ BEFORE UPDATE ON public.user_streaks
 FOR EACH ROW
 EXECUTE FUNCTION update_user_streaks_updated_at();
 
+

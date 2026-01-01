@@ -32,3 +32,4 @@
 **For immediate use**: Use **Email Verification** (free, works now)
 **For production**: Use **AWS SNS** (very cheap, reliable)
 
+

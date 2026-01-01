@@ -63,3 +63,4 @@ Or tell Lovable's agent:
 The app is still showing email/password login. Please update src/pages/Index.tsx to use NameForm instead of AuthForm. The NameForm component should be imported from @/components/NameForm.
 ```
 
+

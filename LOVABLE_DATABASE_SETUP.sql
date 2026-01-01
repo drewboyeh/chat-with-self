@@ -100,3 +100,4 @@ WHERE table_schema = 'public'
   AND table_name = 'reminders'
 ORDER BY ordinal_position;
 
+

@@ -32,3 +32,4 @@ User enters their email, we generate code, show it to them.
 **For immediate use**: Show code in UI (works now, no setup)
 **For production**: Use Resend (free tier, professional)
 
+

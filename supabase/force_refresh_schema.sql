@@ -34,3 +34,4 @@ NOTIFY pgrst, 'reload schema';
 -- Step 7: If still not working, try creating a dummy query to force cache
 SELECT * FROM public.reminders WHERE false;
 
+

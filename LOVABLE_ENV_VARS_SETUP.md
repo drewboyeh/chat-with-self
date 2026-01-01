@@ -85,3 +85,4 @@ If Lovable doesn't have environment variable UI:
 - You have **full control** over your database
 - Lovable is just the frontend - the database is yours!
 
+

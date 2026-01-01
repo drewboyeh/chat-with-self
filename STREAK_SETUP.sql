@@ -92,3 +92,4 @@ WHERE table_schema = 'public'
   AND table_name = 'user_streaks'
 ORDER BY ordinal_position;
 
+

@@ -41,3 +41,4 @@ Once the API key is set, email verification will work automatically.
 - Pro: $20/month for 50,000 emails
 - Only upgrade when you exceed free tier
 
+

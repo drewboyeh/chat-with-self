@@ -175,3 +175,4 @@ function getMilestoneMessage(days: number): string {
   return messages[days] || `🎊 ${days} days! Keep going!`;
 }
 
+

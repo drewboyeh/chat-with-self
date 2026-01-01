@@ -34,3 +34,4 @@ WHERE table_schema = 'public'
   AND table_name = 'verification_codes'
 ORDER BY ordinal_position;
 
+

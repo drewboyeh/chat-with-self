@@ -259,3 +259,4 @@ Lovable is just a frontend hosting service. Your Supabase is:
 
 **Just point Lovable to YOUR Supabase via environment variables, and you're in full control!**
 
+

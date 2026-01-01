@@ -39,3 +39,4 @@ If you prefer to do it manually in Lovable:
 4. Paste the SQL from `LOVABLE_DATABASE_SETUP.sql`
 5. Click "Run"
 
+

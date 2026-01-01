@@ -29,3 +29,4 @@ If you still get errors, check:
 - The table exists: Go to Supabase Dashboard → Table Editor → You should see `reminders` table
 - RLS policies are set: Go to Authentication → Policies → You should see policies for `reminders` table
 
+

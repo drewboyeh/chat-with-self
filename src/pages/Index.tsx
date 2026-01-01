@@ -7,6 +7,7 @@ import { ChatJournal } from "@/components/ChatJournal";
 import { CheckInDialog } from "@/components/CheckInDialog";
 import { ArtGallery } from "@/components/ArtGallery";
 import { MuseumEntrance } from "@/components/MuseumEntrance";
+import { SplashScreen } from "@/components/SplashScreen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoalArt, type GoalArtPiece } from "@/hooks/useGoalArt";
 import { ArtRenderer } from "@/components/ArtRenderer";
@@ -20,7 +21,18 @@ const Index = () => {
   const { checkInReminder, setCheckInReminder } = useReminders();
   const [activeTab, setActiveTab] = useState("home");
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   const [showGoalDiscovery, setShowGoalDiscovery] = useState(false);
+
+  // Check if splash screen has been shown before
+  useEffect(() => {
+    if (!loading && !user) {
+      const hasSeenSplash = localStorage.getItem("selfart_has_seen_splash");
+      if (!hasSeenSplash) {
+        setShowSplash(true);
+      }
+    }
+  }, [loading, user]);
 
   if (loading) {
     return (
@@ -30,6 +42,18 @@ const Index = () => {
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
+    );
+  }
+
+  // Show splash screen on first launch
+  if (showSplash) {
+    return (
+      <SplashScreen
+        onGetStarted={() => {
+          localStorage.setItem("selfart_has_seen_splash", "true");
+          setShowSplash(false);
+        }}
+      />
     );
   }
 

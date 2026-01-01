@@ -53,3 +53,4 @@ After switching, check browser console:
 - Should show: `🔍 Supabase URL: https://zsvwohwgvjshtmeoulte.supabase.co` (or the one you're using)
 - Should show: `🔍 Supabase Key exists: true`
 
+

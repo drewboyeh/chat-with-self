@@ -50,3 +50,4 @@ If you want email verification instead:
 - Free tier: 3,000 emails/month
 - Easy API integration
 
+

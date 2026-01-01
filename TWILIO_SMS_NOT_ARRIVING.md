@@ -118,3 +118,4 @@ For now, you can use the code from the browser console to test the verification 
 4. **Check Supabase logs** for detailed Twilio response
 5. **Test with curl** to verify Twilio credentials work
 
+
