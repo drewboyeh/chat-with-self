@@ -17,7 +17,7 @@ export function SplashScreen({ onGetStarted }: SplashScreenProps) {
             selfart
           </h1>
           <p className="text-2xl text-muted-foreground font-light italic">
-            make your life a masterpiece
+            turn life into your masterpiece
           </p>
         </div>
 
