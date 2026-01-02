@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoals, Goal } from "@/hooks/useGoals";
 import { useToast } from "@/hooks/use-toast";
+import { usePieceBasedArt } from "@/hooks/usePieceBasedArt";
+import { ArtCelebration } from "./ArtCelebration";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Plus,
   Target,
@@ -120,10 +123,31 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
     targetDate: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [celebration, setCelebration] = useState<{
+    open: boolean;
+    type: "completion" | "progress";
+    goalTitle: string;
+    artData?: any;
+    progress?: number;
+    totalPieces?: number;
+    revealedPieces?: number;
+    newPiecesRevealed?: number;
+  }>({ open: false, type: "progress", goalTitle: "" });
+  const [previousProgress, setPreviousProgress] = useState<Record<string, number>>({});
 
   const { activeGoals, completedGoals, createGoal, updateGoalProgress, deleteGoal } =
     useGoals();
+  const { updateArtProgress, generateArtForGoal } = usePieceBasedArt();
   const { toast } = useToast();
+
+  // Track previous progress for each goal
+  useEffect(() => {
+    const progressMap: Record<string, number> = {};
+    activeGoals.forEach((goal) => {
+      progressMap[goal.id] = goal.progress;
+    });
+    setPreviousProgress(progressMap);
+  }, [activeGoals]);
 
   const handleCreateGoal = async () => {
     if (!newGoal.title.trim()) return;
@@ -137,6 +161,11 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
     );
 
     if (result) {
+      // Generate art for the new goal
+      const startDate = new Date(result.created_at);
+      const targetDate = result.target_date ? new Date(result.target_date) : null;
+      await generateArtForGoal(result.id, result.title, startDate, targetDate);
+
       toast({
         title: "Art Project Started",
         description: "Every step forward creates art in your gallery. Keep going!",
@@ -154,12 +183,66 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
   };
 
   const handleUpdateProgress = async (goalId: string, progress: number) => {
+    const goal = activeGoals.find((g) => g.id === goalId);
+    if (!goal) return;
+
+    const previousProg = previousProgress[goalId] || 0;
     const success = await updateGoalProgress(goalId, progress);
-    if (success && progress >= 100) {
-      toast({
-        title: "🎨 Art Piece Created!",
-        description: "Amazing work! Your gallery grows with each completed goal.",
-      });
+
+    if (success) {
+      // Update art progress
+      await updateArtProgress(goalId, progress);
+
+      // Fetch art piece data for celebration
+      if (goal.art_piece_id) {
+        const { data: artPiece } = await supabase
+          .from("art_pieces")
+          .select("*")
+          .eq("id", goal.art_piece_id)
+          .single();
+
+        if (artPiece) {
+          // Check if goal was completed
+          if (progress >= 100 && previousProg < 100) {
+            // Full completion celebration
+            setCelebration({
+              open: true,
+              type: "completion",
+              goalTitle: goal.title,
+              artData: artPiece.art_data,
+              progress: 100,
+            });
+          } else if (progress > previousProg && artPiece.total_pieces > 1) {
+            // Progress celebration - new pieces revealed
+            const previousRevealed = Math.floor(
+              (artPiece.total_pieces * previousProg) / 100
+            );
+            const currentRevealed = Math.floor(
+              (artPiece.total_pieces * progress) / 100
+            );
+            const newPieces = currentRevealed - previousRevealed;
+
+            if (newPieces > 0) {
+              setCelebration({
+                open: true,
+                type: "progress",
+                goalTitle: goal.title,
+                artData: artPiece.art_data,
+                progress,
+                totalPieces: artPiece.total_pieces,
+                revealedPieces: currentRevealed,
+                newPiecesRevealed: newPieces,
+              });
+            }
+          }
+        }
+      } else if (progress >= 100 && previousProg < 100) {
+        // Goal completed but no art piece yet (shouldn't happen, but handle gracefully)
+        toast({
+          title: "🎨 Art Piece Created!",
+          description: "Amazing work! Your gallery grows with each completed goal.",
+        });
+      }
     }
   };
 
@@ -174,8 +257,9 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
             <DialogTitle className="font-serif text-2xl flex items-center gap-2">
             <Target className="w-6 h-6 text-primary" />
@@ -336,5 +420,18 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
         </Tabs>
       </DialogContent>
     </Dialog>
+
+    <ArtCelebration
+      open={celebration.open}
+      onClose={() => setCelebration({ ...celebration, open: false })}
+      type={celebration.type}
+      goalTitle={celebration.goalTitle}
+      artData={celebration.artData}
+      progress={celebration.progress}
+      totalPieces={celebration.totalPieces}
+      revealedPieces={celebration.revealedPieces}
+      newPiecesRevealed={celebration.newPiecesRevealed}
+    />
+    </>
   );
 }
