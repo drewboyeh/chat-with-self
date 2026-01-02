@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useReminders } from "@/hooks/useReminders";
 import { NameForm } from "@/components/NameForm";
 import { GoalDiscovery } from "@/components/GoalDiscovery";
-import { ChatJournal } from "@/components/ChatJournal";
+import { MuseumGallery } from "@/components/MuseumGallery";
 import { CheckInDialog } from "@/components/CheckInDialog";
 import { ArtGallery } from "@/components/ArtGallery";
 import { MuseumEntrance } from "@/components/MuseumEntrance";
@@ -115,7 +115,7 @@ const Index = () => {
         </TabsContent>
 
         <TabsContent value="journal" className="flex-1 m-0">
-          <ChatJournal />
+          <MuseumGallery />
         </TabsContent>
       </Tabs>
 

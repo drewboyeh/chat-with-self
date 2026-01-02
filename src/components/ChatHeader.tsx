@@ -5,7 +5,6 @@ import { StreakCounter } from "./StreakCounter";
 import { WellnessHub } from "./WellnessHub";
 
 interface ChatHeaderProps {
-  onOpenFutureVisions?: () => void;
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
   onOpenMoodTracker?: () => void;
@@ -15,7 +14,6 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({
-  onOpenFutureVisions,
   onToggleSidebar,
   sidebarOpen,
   onOpenMoodTracker,
@@ -64,23 +62,6 @@ export function ChatHeader({
               onOpenGoals={onOpenGoals}
             />
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onOpenFutureVisions}
-            className="text-primary border-primary/30 hover:bg-primary/10 hidden sm:flex"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Future Visions
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onOpenFutureVisions}
-            className="text-primary sm:hidden"
-          >
-            <Sparkles className="w-5 h-5" />
-          </Button>
           <Button
             variant="ghost"
             size="sm"

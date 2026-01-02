@@ -296,7 +296,7 @@ export function MuseumEntrance({ onEnterGallery, onEnterStudio }: MuseumEntrance
                   Create Art
                 </h3>
                 <p className="text-xs md:text-sm text-stone-600">
-                  Journal, set goals, reflect
+                  Create new art projects
                 </p>
               </div>
             </div>

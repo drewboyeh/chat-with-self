@@ -10,7 +10,6 @@ import { ChatInput } from "./ChatInput";
 import { TypingIndicator } from "./TypingIndicator";
 import { EmptyState } from "./EmptyState";
 import { Onboarding } from "./Onboarding";
-import { FutureVisions } from "./FutureVisions";
 import { EntrySidebar } from "./EntrySidebar";
 import { MoodTracker } from "./MoodTracker";
 import { MoodHistory } from "./MoodHistory";
@@ -30,7 +29,6 @@ export function ChatJournal() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showFutureVisions, setShowFutureVisions] = useState(false);
   const [showMoodTracker, setShowMoodTracker] = useState(false);
   const [showMoodHistory, setShowMoodHistory] = useState(false);
   const [showPrompts, setShowPrompts] = useState(false);
@@ -279,7 +277,6 @@ export function ChatJournal() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         <ChatHeader 
-          onOpenFutureVisions={() => setShowFutureVisions(true)}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           sidebarOpen={sidebarOpen}
           onOpenMoodTracker={() => setShowMoodTracker(true)}
@@ -321,9 +318,6 @@ export function ChatJournal() {
           inputRef={inputRef}
         />
 
-        {showFutureVisions && (
-          <FutureVisions onClose={() => setShowFutureVisions(false)} />
-        )}
         
         <MoodTracker open={showMoodTracker} onOpenChange={setShowMoodTracker} />
         <MoodHistory open={showMoodHistory} onOpenChange={setShowMoodHistory} />
