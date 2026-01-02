@@ -202,6 +202,9 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
           .single();
 
         if (artPiece) {
+          const artData = artPiece.art_data as { total_pieces?: number } | null;
+          const totalPieces = artData?.total_pieces || 1;
+          
           // Check if goal was completed
           if (progress >= 100 && previousProg < 100) {
             // Full completion celebration
@@ -212,13 +215,13 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
               artData: artPiece.art_data,
               progress: 100,
             });
-          } else if (progress > previousProg && artPiece.total_pieces > 1) {
+          } else if (progress > previousProg && totalPieces > 1) {
             // Progress celebration - new pieces revealed
             const previousRevealed = Math.floor(
-              (artPiece.total_pieces * previousProg) / 100
+              (totalPieces * previousProg) / 100
             );
             const currentRevealed = Math.floor(
-              (artPiece.total_pieces * progress) / 100
+              (totalPieces * progress) / 100
             );
             const newPieces = currentRevealed - previousRevealed;
 
@@ -229,7 +232,7 @@ export function GoalTracker({ open, onOpenChange }: GoalTrackerProps) {
                 goalTitle: goal.title,
                 artData: artPiece.art_data,
                 progress,
-                totalPieces: artPiece.total_pieces,
+                totalPieces: totalPieces,
                 revealedPieces: currentRevealed,
                 newPiecesRevealed: newPieces,
               });
