@@ -96,14 +96,15 @@ export function ArtCelebration({
                 {[...Array(20)].map((_, i) => (
                   <Sparkles
                     key={i}
-                    className="absolute animate-ping"
+                    className="absolute animate-ping text-primary"
                     style={{
                       left: `${Math.random() * 100}%`,
                       top: `${Math.random() * 100}%`,
                       animationDelay: `${Math.random() * 2}s`,
                       animationDuration: `${1 + Math.random() * 2}s`,
+                      width: `${16 + Math.random() * 24}px`,
+                      height: `${16 + Math.random() * 24}px`,
                     }}
-                    size={16 + Math.random() * 24}
                   />
                 ))}
               </div>
