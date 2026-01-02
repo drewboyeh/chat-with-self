@@ -407,85 +407,205 @@ export function MuseumGallery() {
     );
   }
 
-  // Room selection view
+  // Room selection view - Museum Hall with Doorways
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-stone-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-serif font-bold mb-2">Museum Gallery</h1>
-          <p className="text-lg text-muted-foreground">
-            Choose a room to view your art collection and create new art projects
+    <div className="min-h-screen bg-gradient-to-b from-stone-100 via-stone-50 to-stone-100 relative overflow-hidden">
+      {/* Museum Hall Background */}
+      {/* Marble Floor Pattern */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(0,0,0,0.02) 100px, rgba(0,0,0,0.02) 102px),
+            repeating-linear-gradient(0deg, transparent, transparent 100px, rgba(0,0,0,0.02) 100px, rgba(0,0,0,0.02) 102px)
+          `,
+        }} />
+      </div>
+
+      {/* Columns on sides */}
+      <div className="absolute inset-y-0 left-0 w-32 pointer-events-none">
+        <div className="h-full w-16 bg-gradient-to-r from-stone-200/40 via-stone-100/30 to-transparent">
+          {/* Column fluting */}
+          <div className="absolute inset-y-0 left-4 w-1 bg-stone-300/20" />
+          <div className="absolute inset-y-0 left-8 w-1 bg-stone-300/20" />
+        </div>
+      </div>
+      <div className="absolute inset-y-0 right-0 w-32 pointer-events-none">
+        <div className="h-full w-16 ml-auto bg-gradient-to-l from-stone-200/40 via-stone-100/30 to-transparent">
+          <div className="absolute inset-y-0 right-4 w-1 bg-stone-300/20" />
+          <div className="absolute inset-y-0 right-8 w-1 bg-stone-300/20" />
+        </div>
+      </div>
+
+      {/* Ceiling Details */}
+      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-stone-200/30 via-stone-100/20 to-transparent pointer-events-none">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-stone-300/30" />
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-12">
+        {/* Header */}
+        <div className="text-center mb-12 animate-fade-in">
+          <h1 className="text-5xl md:text-6xl font-serif font-bold text-stone-800 mb-3 drop-shadow-lg">
+            Museum Gallery
+          </h1>
+          <p className="text-xl text-stone-600 font-light italic">
+            Choose a room to begin creating your art
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Daily Goals Room */}
-          <div
-            className="bg-card rounded-xl p-6 border-2 border-border hover:border-primary/50 cursor-pointer transition-all hover:shadow-lg"
+        {/* Four Doorways - Museum Rooms */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 max-w-7xl w-full">
+          {/* Daily Goals Room Doorway */}
+          <MuseumDoorway
+            icon={Calendar}
+            title="Daily Goals"
+            subtitle="Small daily habits"
+            artCount={dailyArt.length}
             onClick={() => setSelectedRoom("daily")}
-          >
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-              <Calendar className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Daily Goals</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Small daily habits that create art pieces
-            </p>
-            <div className="text-sm font-medium text-primary">
-              {dailyArt.length} art piece{dailyArt.length !== 1 ? "s" : ""}
-            </div>
-          </div>
+            color="from-blue-200/30 to-blue-100/20"
+            hoverColor="from-blue-300/40 to-blue-200/30"
+          />
 
-          {/* Short-Term Goals Room */}
-          <div
-            className="bg-card rounded-xl p-6 border-2 border-border hover:border-primary/50 cursor-pointer transition-all hover:shadow-lg"
+          {/* Short-Term Goals Room Doorway */}
+          <MuseumDoorway
+            icon={Clock}
+            title="Short-Term"
+            subtitle="Week to month"
+            artCount={shortTermArt.length}
             onClick={() => setSelectedRoom("short-term")}
-          >
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-              <Clock className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Short-Term</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Week to month projects
-            </p>
-            <div className="text-sm font-medium text-primary">
-              {shortTermArt.length} art piece{shortTermArt.length !== 1 ? "s" : ""}
-            </div>
-          </div>
+            color="from-green-200/30 to-green-100/20"
+            hoverColor="from-green-300/40 to-green-200/30"
+          />
 
-          {/* Medium-Term Goals Room */}
-          <div
-            className="bg-card rounded-xl p-6 border-2 border-border hover:border-primary/50 cursor-pointer transition-all hover:shadow-lg"
+          {/* Medium-Term Goals Room Doorway */}
+          <MuseumDoorway
+            icon={TrendingUp}
+            title="Medium-Term"
+            subtitle="Month to 6 months"
+            artCount={mediumTermArt.length}
             onClick={() => setSelectedRoom("medium-term")}
-          >
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-              <TrendingUp className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Medium-Term</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Month to 6 months
-            </p>
-            <div className="text-sm font-medium text-primary">
-              {mediumTermArt.length} art piece{mediumTermArt.length !== 1 ? "s" : ""}
-            </div>
-          </div>
+            color="from-amber-200/30 to-amber-100/20"
+            hoverColor="from-amber-300/40 to-amber-200/30"
+          />
 
-          {/* Long-Term Goals Room */}
-          <div
-            className="bg-card rounded-xl p-6 border-2 border-border hover:border-primary/50 cursor-pointer transition-all hover:shadow-lg"
+          {/* Long-Term Goals Room Doorway */}
+          <MuseumDoorway
+            icon={Mountain}
+            title="Long-Term"
+            subtitle="6 months or longer"
+            artCount={longTermArt.length}
             onClick={() => setSelectedRoom("long-term")}
-          >
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-              <Mountain className="w-6 h-6 text-primary" />
+            color="from-purple-200/30 to-purple-100/20"
+            hoverColor="from-purple-300/40 to-purple-200/30"
+          />
+        </div>
+
+        {/* Decorative Quote */}
+        <div className="mt-16 text-center max-w-2xl">
+          <p className="text-stone-600 text-lg italic font-serif">
+            "Every goal is a doorway. Every step forward is a masterpiece in the making."
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Museum Doorway Component
+function MuseumDoorway({
+  icon: Icon,
+  title,
+  subtitle,
+  artCount,
+  onClick,
+  color,
+  hoverColor,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle: string;
+  artCount: number;
+  onClick: () => void;
+  color: string;
+  hoverColor: string;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      className="relative group cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
+    >
+      {/* Doorway Frame */}
+      <div className={`
+        relative w-full h-80 md:h-96 rounded-2xl overflow-hidden
+        bg-gradient-to-b ${isHovered ? hoverColor : color}
+        border-2 ${isHovered ? "border-stone-400 shadow-2xl" : "border-stone-300/50 shadow-xl"}
+        transition-all duration-500
+        ${isHovered ? "scale-105 -translate-y-2" : ""}
+      `}>
+        {/* Classical Archway */}
+        <div className="absolute inset-0 flex items-center justify-center p-4">
+          <div className={`
+            relative w-3/4 h-3/4
+            border-4 ${isHovered ? "border-stone-400" : "border-stone-300/60"}
+            rounded-t-full
+            bg-gradient-to-b from-white/30 via-white/10 to-transparent
+            transition-all duration-500
+            ${isHovered ? "border-opacity-100" : ""}
+          `}>
+            {/* Glow effect on hover */}
+            {isHovered && (
+              <div className={`absolute inset-0 bg-gradient-to-b ${hoverColor} rounded-t-full animate-pulse`} />
+            )}
+            
+            {/* Icon */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Icon className={`
+                w-16 h-16 text-stone-700
+                transition-all duration-500
+                ${isHovered ? "scale-125 text-stone-900" : ""}
+              `} />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Long-Term</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              6 months or longer
+
+            {/* Light rays from doorway */}
+            {isHovered && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-transparent rounded-t-full" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Doorway Base/Threshold */}
+        <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-t from-stone-300/40 to-transparent" />
+
+        {/* Label Plaque */}
+        <div className="absolute bottom-6 left-0 right-0 text-center px-4">
+          <div className={`
+            inline-block bg-stone-50/90 backdrop-blur-sm rounded-lg px-4 py-2
+            border ${isHovered ? "border-stone-400" : "border-stone-300/50"}
+            shadow-lg transition-all duration-500
+            ${isHovered ? "scale-110" : ""}
+          `}>
+            <h3 className="text-lg md:text-xl font-serif font-bold text-stone-800 mb-1">
+              {title}
+            </h3>
+            <p className="text-xs md:text-sm text-stone-600 mb-2">
+              {subtitle}
             </p>
-            <div className="text-sm font-medium text-primary">
-              {longTermArt.length} art piece{longTermArt.length !== 1 ? "s" : ""}
+            <div className="text-xs font-medium text-primary">
+              {artCount} art piece{artCount !== 1 ? "s" : ""}
             </div>
           </div>
+        </div>
+
+        {/* Decorative Elements */}
+        <div className="absolute top-4 left-4 right-4 flex justify-between pointer-events-none">
+          <div className={`w-8 h-8 rounded-full bg-stone-200/30 ${isHovered ? "bg-stone-300/50" : ""} transition-all duration-500`} />
+          <div className={`w-8 h-8 rounded-full bg-stone-200/30 ${isHovered ? "bg-stone-300/50" : ""} transition-all duration-500`} />
         </div>
       </div>
     </div>
