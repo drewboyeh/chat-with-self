@@ -10,7 +10,8 @@ interface MuseumEntranceProps {
 
 export function MuseumEntrance({ onEnterGallery, onEnterStudio }: MuseumEntranceProps) {
   const { artPieces, isLoading: artLoading } = useGoalArt();
-  const { currentStreak } = useStreak();
+  const { streak } = useStreak();
+  const currentStreak = streak?.current_streak || 0;
   const [hoveredDoor, setHoveredDoor] = useState<"gallery" | "studio" | null>(null);
 
   const totalArtPieces = artPieces.length;

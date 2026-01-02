@@ -7,7 +7,7 @@ import {
   getRevealedPieceIndices,
   type ArtPieceConfig,
 } from "@/lib/artPieceCalculator";
-import { generateArtPiece, generateArtPieceComponent } from "@/lib/artGenerator";
+import { generateArtPiece } from "@/lib/artGenerator";
 
 /**
  * Hook to manage piece-based art generation and updates
@@ -33,7 +33,14 @@ export function usePieceBasedArt() {
           grandeur: config.grandeurLevel,
         });
 
-        // Create the art piece record
+        // Create the art piece record with total_pieces in art_data
+        const artDataWithPieces = {
+          ...baseArtData,
+          total_pieces: config.totalPieces,
+          revealed_pieces: 0,
+          revealed_piece_indices: [],
+        };
+
         const { data: artPiece, error: artError } = await supabase
           .from("art_pieces")
           .insert({
@@ -44,44 +51,13 @@ export function usePieceBasedArt() {
             fame_level: config.grandeurLevel === "epic" ? "legendary" : "rare",
             title: goalTitle,
             description: `A ${getGrandeurDescription(config.grandeurLevel)} with ${config.totalPieces} pieces`,
-            art_data: baseArtData,
-            total_pieces: config.totalPieces,
-            revealed_pieces: 0,
-            revealed_piece_indices: [],
+            art_data: artDataWithPieces,
             completion_percentage: 0,
-            is_public: false,
           })
           .select()
           .single();
 
         if (artError) throw artError;
-
-        // Generate individual piece components
-        const pieceComponents = [];
-        for (let i = 0; i < config.totalPieces; i++) {
-          // Generate a unique piece component based on index and grandeur
-          const pieceData = generateArtPieceComponent(
-            i,
-            config.totalPieces,
-            config.grandeurLevel,
-            baseArtData,
-            artPiece.id
-          );
-
-          pieceComponents.push({
-            art_piece_id: artPiece.id,
-            piece_index: i,
-            component_data: pieceData,
-            grandeur_level: getPieceGrandeur(i, config.totalPieces, config.grandeurLevel),
-          });
-        }
-
-        // Insert all piece components
-        const { error: componentsError } = await supabase
-          .from("art_piece_components")
-          .insert(pieceComponents);
-
-        if (componentsError) throw componentsError;
 
         // Update goal with art_piece_id
         await supabase
@@ -119,22 +95,31 @@ export function usePieceBasedArt() {
           return false;
         }
 
+        // Get total_pieces from art_data
+        const artData = artPiece.art_data as { total_pieces?: number } | null;
+        const totalPieces = artData?.total_pieces || 1;
+
         // Calculate how many pieces should be revealed
-        const revealedCount = calculateRevealedPieces(artPiece.total_pieces, progressPercentage);
+        const revealedCount = calculateRevealedPieces(totalPieces, progressPercentage);
 
         // Get which pieces should be revealed (using seeded random for consistency)
         const revealedIndices = getRevealedPieceIndices(
-          artPiece.total_pieces,
+          totalPieces,
           revealedCount,
           artPiece.id
         );
 
-        // Update the art piece
+        // Update the art piece with revealed pieces in art_data
+        const updatedArtData = {
+          ...(artPiece.art_data as object),
+          revealed_pieces: revealedCount,
+          revealed_piece_indices: revealedIndices,
+        };
+
         const { error: updateError } = await supabase
           .from("art_pieces")
           .update({
-            revealed_pieces: revealedCount,
-            revealed_piece_indices: revealedIndices,
+            art_data: updatedArtData,
             completion_percentage: progressPercentage,
           })
           .eq("id", artPiece.id);
@@ -158,9 +143,24 @@ export function usePieceBasedArt() {
       if (!user) return false;
 
       try {
+        // Store visibility in art_data since is_public column doesn't exist
+        const { data: artPiece } = await supabase
+          .from("art_pieces")
+          .select("art_data")
+          .eq("id", artPieceId)
+          .eq("user_id", user.id)
+          .single();
+
+        if (!artPiece) return false;
+
+        const updatedArtData = {
+          ...(artPiece.art_data as object),
+          is_public: isPublic,
+        };
+
         const { error } = await supabase
           .from("art_pieces")
-          .update({ is_public: isPublic })
+          .update({ art_data: updatedArtData })
           .eq("id", artPieceId)
           .eq("user_id", user.id);
 
@@ -197,53 +197,6 @@ function getGrandeurDescription(grandeur: string): string {
 }
 
 /**
- * Generate an individual art piece component
- */
-function generateArtPieceComponent({
-  index,
-  totalPieces,
-  grandeur,
-  baseArtData,
-}: {
-  index: number;
-  totalPieces: number;
-  grandeur: ArtPieceConfig["grandeurLevel"];
-  baseArtData: any;
-}): any {
-  // This would generate a unique piece component
-  // For now, return a placeholder structure
-  // In production, this would use the art generator to create unique pieces
-  return {
-    type: "component",
-    index,
-    position: {
-      x: (index % Math.sqrt(totalPieces)) * 10,
-      y: Math.floor(index / Math.sqrt(totalPieces)) * 10,
-    },
-    data: baseArtData,
-    complexity: getComplexityForGrandeur(grandeur),
-  };
-}
-
-/**
- * Get piece grandeur level based on position and total pieces
- */
-function getPieceGrandeur(
-  index: number,
-  totalPieces: number,
-  baseGrandeur: ArtPieceConfig["grandeurLevel"]
-): string {
-  // Center pieces are more grand
-  const centerDistance = Math.abs(index - totalPieces / 2) / (totalPieces / 2);
-  
-  if (centerDistance < 0.1) return "epic";
-  if (centerDistance < 0.3) return "grand";
-  if (centerDistance < 0.5) return "large";
-  if (centerDistance < 0.7) return "medium";
-  return "small";
-}
-
-/**
  * Get complexity level for grandeur
  */
 function getComplexityForGrandeur(grandeur: ArtPieceConfig["grandeurLevel"]): number {
@@ -257,4 +210,3 @@ function getComplexityForGrandeur(grandeur: ArtPieceConfig["grandeurLevel"]): nu
   };
   return complexityMap[grandeur] || 1;
 }
-

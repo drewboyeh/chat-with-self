@@ -133,13 +133,20 @@ export function ChatJournal() {
     setIsLoading(true);
 
     try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const accessToken = currentSession?.access_token;
+      
+      if (!accessToken) {
+        throw new Error("No valid session found");
+      }
+
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-journal`,
+        `https://zsvwohwgvjshtmeoulte.supabase.co/functions/v1/chat-journal`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ message, userId: user.id, therapistStyle: therapistStyle || "practical" }),
         }
