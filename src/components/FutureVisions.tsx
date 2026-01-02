@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { ReminderForm } from "./ReminderForm";
 import { ReminderList } from "./ReminderList";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FutureVisionsProps {
   onClose: () => void;
@@ -45,13 +46,20 @@ export function FutureVisions({ onClose }: FutureVisionsProps) {
     setVisions(null);
 
     try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const accessToken = currentSession?.access_token;
+      
+      if (!accessToken) {
+        throw new Error("No valid session found");
+      }
+
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-journal`,
+        `https://zsvwohwgvjshtmeoulte.supabase.co/functions/v1/chat-journal`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             message: prompt,
